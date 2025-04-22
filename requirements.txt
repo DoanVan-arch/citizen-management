@@ -1,5 +1,5 @@
 streamlit
-opencv-python==4.7.0.72
-pyzbar==0.1.9
-numpy==1.24.3
-pandas==2.0.2
+opencv-python
+pyzbar
+numpy
+pandas
