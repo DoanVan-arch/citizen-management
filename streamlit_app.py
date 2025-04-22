@@ -163,14 +163,31 @@ def scan_qr_code():
         <div class="info-card">
             <h3>Quét qua Camera</h3>
             <p>Sử dụng camera để quét trực tiếp</p>
+            <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <h4 style="color: #856404;">⚠️ Lưu ý quan trọng:</h4>
+                <ol style="color: #856404;">
+                    <li>Khi bấm "Bật Camera", trình duyệt sẽ yêu cầu quyền truy cập camera</li>
+                    <li>Vui lòng chọn "Allow" hoặc "Cho phép" để sử dụng tính năng này</li>
+                    <li>Nếu đã từ chối trước đó, vui lòng:
+                        <ul>
+                            <li>Kiểm tra biểu tượng camera trên thanh địa chỉ</li>
+                            <li>Hoặc vào cài đặt trình duyệt để cấp quyền camera</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
         start_camera = st.button("Bật Camera")
         
         if start_camera:
-            camera = init_camera()
+            # Hiển thị thông báo đang khởi tạo camera
+            with st.spinner('Đang kết nối với camera...'):
+                camera = init_camera()
+                
             if camera is not None:
+                st.success("Đã kết nối camera thành công!")
                 frame_placeholder = st.empty()
                 stop_button = st.button("Dừng quét")
                 
@@ -190,9 +207,26 @@ def scan_qr_code():
                         
                         frame_placeholder.image(frame_rgb, channels="RGB")
                 except Exception as e:
-                    st.error(f"Lỗi: {str(e)}")
+                    st.error(f"""
+                    Lỗi khi sử dụng camera: {str(e)}
+                    
+                    Vui lòng kiểm tra:
+                    1. Quyền truy cập camera trong trình duyệt
+                    2. Camera có đang được ứng dụng khác sử dụng không
+                    3. Camera có được kết nối đúng cách không
+                    """)
                 finally:
                     camera.release()
+            else:
+                st.error("""
+                Không thể kết nối với camera!
+                
+                Vui lòng kiểm tra:
+                1. Camera có được kết nối với máy tính không
+                2. Quyền truy cập camera trong trình duyệt
+                3. Camera không bị ứng dụng khác sử dụng
+                """)
+
 
 def show_citizen_data():
     """
