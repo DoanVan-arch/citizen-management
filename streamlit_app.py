@@ -238,9 +238,9 @@ def scan_qr_code():
                     # Lưu thông tin vào DataFrame
                     new_data = {
                         'id': citizen_info[0],
-                        'name': citizen_info[1],
-                        'dob': citizen_info[2],
-                        'address': citizen_info[3],
+                        'name': citizen_info[2],
+                        'dateofbird': citizen_info[3],
+                        'address': citizen_info[4],
                         'scan_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         'image_path': "camera_capture"  # Có thể thêm chức năng chụp ảnh nếu cần
                     }
@@ -257,9 +257,9 @@ def scan_qr_code():
                     """, unsafe_allow_html=True)
                     
                     st.write(f"**ID:** {citizen_info[0]}")
-                    st.write(f"**Họ tên:** {citizen_info[1]}")
-                    st.write(f"**Ngày sinh:** {citizen_info[2]}")
-                    st.write(f"**Địa chỉ:** {citizen_info[3]}")
+                    st.write(f"**Họ tên:** {citizen_info[2]}")
+                    st.write(f"**Ngày sinh:** {citizen_info[3]}")
+                    st.write(f"**Địa chỉ:** {citizen_info[4]}")
 
 
 def show_citizen_data():
@@ -283,7 +283,7 @@ def show_citizen_data():
                     st.markdown(f"""
                     **ID:** {row['id']}  
                     **Họ tên:** {row['name']}  
-                    **Ngày sinh:** {row['dob']}  
+                    **Ngày sinh:** {row['dateofbird']}  
                     **Địa chỉ:** {row['address']}  
                     **Ngày quét:** {row['scan_date']}
                     """)
