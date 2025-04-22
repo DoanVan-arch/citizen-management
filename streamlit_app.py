@@ -1,6 +1,5 @@
 import streamlit as st
 import cv2
-import face_recognition
 import numpy as np
 from pyzbar.pyzbar import decode
 import pandas as pd
@@ -94,18 +93,7 @@ def face_recognition_system():
             small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
             rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
             
-            face_locations = face_recognition.face_locations(rgb_small_frame)
-            
-            # Vẽ khung cho khuôn mặt được phát hiện
-            for top, right, bottom, left in face_locations:
-                top *= 4
-                right *= 4
-                bottom *= 4
-                left *= 4
-                cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-            
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame_placeholder.image(frame_rgb, channels="RGB")
+          
     except Exception as e:
         st.error(f"Lỗi: {str(e)}")
     finally:
