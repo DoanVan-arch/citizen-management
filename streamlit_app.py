@@ -54,7 +54,28 @@ st.markdown("""
 if 'citizens_data' not in st.session_state:
     st.session_state.citizens_data = pd.DataFrame(columns=['id', 'name', 'dob', 'address', 'scan_date', 'image_path'])
 
+def init_camera():
+    """
+    Khởi tạo camera và kiểm tra kết nối
+    """
+    try:
+        # Thử kết nối với camera của thiết bị
+        camera = cv2.VideoCapture(0)
+        
+        # Kiểm tra xem camera có hoạt động không
+        if not camera.isOpened():
+            st.error("Không thể kết nối với camera. Vui lòng kiểm tra lại thiết bị.")
+            return None
+            
+        return camera
+    except Exception as e:
+        st.error(f"Lỗi khi khởi tạo camera: {str(e)}")
+        return None
+
 def process_image_for_qr(image):
+    """
+    Xử lý ảnh để tìm và giải mã QR code
+    """
     try:
         # Chuyển đổi ảnh sang định dạng phù hợp
         if isinstance(image, np.ndarray):
@@ -70,13 +91,13 @@ def process_image_for_qr(image):
             citizen_info = qr_data.split('|')
             
             if len(citizen_info) >= 4:
-                # Lưu ảnh
+                # Tạo thư mục lưu ảnh nếu chưa tồn tại
+                os.makedirs("uploaded_images", exist_ok=True)
+                
+                # Tạo tên file ảnh với timestamp
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 image_filename = f"citizen_image_{timestamp}.jpg"
                 image_path = os.path.join("uploaded_images", image_filename)
-                
-                # Tạo thư mục nếu chưa tồn tại
-                os.makedirs("uploaded_images", exist_ok=True)
                 
                 # Lưu ảnh
                 if isinstance(image, np.ndarray):
@@ -84,6 +105,7 @@ def process_image_for_qr(image):
                 else:
                     image.save(image_path)
 
+                # Tạo bản ghi mới
                 new_data = {
                     'id': citizen_info[0],
                     'name': citizen_info[1],
@@ -93,6 +115,7 @@ def process_image_for_qr(image):
                     'image_path': image_path
                 }
                 
+                # Cập nhật DataFrame
                 st.session_state.citizens_data = pd.concat([
                     st.session_state.citizens_data,
                     pd.DataFrame([new_data])
@@ -106,8 +129,12 @@ def process_image_for_qr(image):
         return False, f"Lỗi khi xử lý ảnh: {str(e)}"
 
 def scan_qr_code():
+    """
+    Chức năng quét mã QR từ camera hoặc ảnh tải lên
+    """
     st.markdown("<h2 style='text-align: center;'>Quét mã QR CCCD</h2>", unsafe_allow_html=True)
     
+    # Chia layout thành 2 cột
     col1, col2 = st.columns(2)
     
     with col1:
@@ -139,63 +166,41 @@ def scan_qr_code():
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("Bật Camera"):
-            cap = init_camera()
-            if cap is None:
-                return
-            
-            frame_placeholder = st.empty()
-            stop_button = st.button("Dừng quét")
-            
-            try:
-                while not stop_button:
-                    ret, frame = cap.read()
-                    if not ret:
-                        st.error("Không thể đọc frame từ camera")
-                        break
-                    
-                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    success, message = process_image_for_qr(frame_rgb)
-                    
-                    if success:
-                        st.markdown(f'<div class="success-message">{message}</div>', unsafe_allow_html=True)
-                        break
-                    
-                    frame_placeholder.image(frame_rgb, channels="RGB")
-            except Exception as e:
-                st.error(f"Lỗi: {str(e)}")
-            finally:
-                cap.release()
+        start_camera = st.button("Bật Camera")
+        
+        if start_camera:
+            camera = init_camera()
+            if camera is not None:
+                frame_placeholder = st.empty()
+                stop_button = st.button("Dừng quét")
+                
+                try:
+                    while not stop_button:
+                        ret, frame = camera.read()
+                        if not ret:
+                            st.error("Không thể đọc frame từ camera")
+                            break
+                        
+                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                        success, message = process_image_for_qr(frame_rgb)
+                        
+                        if success:
+                            st.markdown(f'<div class="success-message">{message}</div>', unsafe_allow_html=True)
+                            break
+                        
+                        frame_placeholder.image(frame_rgb, channels="RGB")
+                except Exception as e:
+                    st.error(f"Lỗi: {str(e)}")
+                finally:
+                    camera.release()
 
 def show_citizen_data():
+    """
+    Hiển thị dữ liệu công dân đã quét
+    """
     st.markdown("<h2 style='text-align: center;'>Dữ liệu Công dân</h2>", unsafe_allow_html=True)
     
     if not st.session_state.citizens_data.empty:
-        # Hiển thị dữ liệu dạng bảng với định dạng đẹp
-        st.markdown("""
-        <style>
-        .dataframe {
-            font-size: 14px;
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .dataframe th {
-            background-color: #0066cc;
-            color: white;
-            padding: 12px;
-            text-align: left;
-        }
-        .dataframe td {
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
-        }
-        .dataframe tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # Hiển thị từng bản ghi với ảnh
         for index, row in st.session_state.citizens_data.iterrows():
             with st.expander(f"Công dân: {row['name']} - ID: {row['id']}"):
                 col1, col2 = st.columns([1, 2])
@@ -218,6 +223,9 @@ def show_citizen_data():
         st.info("Chưa có dữ liệu công dân nào.")
 
 def main():
+    """
+    Hàm chính của ứng dụng
+    """
     # Sidebar
     st.sidebar.markdown("<h1 style='text-align: center;'>🏛️</h1>", unsafe_allow_html=True)
     st.sidebar.markdown("<h2 style='text-align: center;'>Quản lý Công dân</h2>", unsafe_allow_html=True)
