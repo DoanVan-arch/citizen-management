@@ -91,13 +91,13 @@ def process_image_for_qr(image):
         # Giải mã QR
         decoded_objects = decode(frame_rgb)
         
-       for obj in decoded_objects:
+        for obj in decoded_objects:
             qr_data = obj.data.decode('utf-8')
             citizen_info = qr_data.split('|')
             
             if len(citizen_info) >= 7:
                 # ... (phần lưu ảnh giữ nguyên)
-
+    
                 # Tạo bản ghi mới
                 new_data = {
                     'id': citizen_info[0],
