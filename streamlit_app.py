@@ -54,7 +54,7 @@ st.markdown("""
 
 # Khởi tạo session state
 if 'citizens_data' not in st.session_state:
-    st.session_state.citizens_data = pd.DataFrame(columns=['id', 'name', 'dob', 'address', 'scan_date', 'image_path'])
+    st.session_state.citizens_data = pd.DataFrame(columns=['id', 'name', 'dob', 'address','info', 'scan_date', 'image_path'])
 
 def init_camera():
     """
@@ -241,6 +241,7 @@ def scan_qr_code():
                         'name': citizen_info[2],
                         'dob': citizen_info[3],
                         'address': citizen_info[4],
+                        'info': qr_data,
                         'scan_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         'image_path': "camera_capture"  # Có thể thêm chức năng chụp ảnh nếu cần
                     }
@@ -260,6 +261,7 @@ def scan_qr_code():
                     st.write(f"**Họ tên:** {citizen_info[2]}")
                     st.write(f"**Ngày sinh:** {citizen_info[3]}")
                     st.write(f"**Địa chỉ:** {citizen_info[4]}")
+                    st.write(f"**Info:**{qr_data}")
 
 
 def show_citizen_data():
@@ -284,7 +286,8 @@ def show_citizen_data():
                     **ID:** {row['id']}  
                     **Họ tên:** {row['name']}  
                     **Ngày sinh:** {row['dob']}  
-                    **Địa chỉ:** {row['address']}  
+                    **Địa chỉ:** {row['address']} 
+                    **Info:**{row['info']}
                     **Ngày quét:** {row['scan_date']}
                     """)
     else:
