@@ -239,7 +239,7 @@ def scan_qr_code():
                     new_data = {
                         'id': citizen_info[0],
                         'name': citizen_info[2],
-                        'dateofbird': citizen_info[3],
+                        'dob': citizen_info[3],
                         'address': citizen_info[4],
                         'scan_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         'image_path': "camera_capture"  # Có thể thêm chức năng chụp ảnh nếu cần
@@ -283,7 +283,7 @@ def show_citizen_data():
                     st.markdown(f"""
                     **ID:** {row['id']}  
                     **Họ tên:** {row['name']}  
-                    **Ngày sinh:** {row['dateofbird']}  
+                    **Ngày sinh:** {row['dob']}  
                     **Địa chỉ:** {row['address']}  
                     **Ngày quét:** {row['scan_date']}
                     """)
