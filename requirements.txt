@@ -1,6 +1,6 @@
 streamlit
-opencv-python
-face-recognition
-pyzbar
-numpy
-pandas
+opencv-python==4.7.0.72
+face-recognition==1.3.0
+pyzbar==0.1.9
+numpy==1.24.3
+pandas==2.0.2
