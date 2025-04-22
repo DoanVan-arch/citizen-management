@@ -98,3 +98,31 @@ def face_recognition_system():
         st.error(f"Lỗi: {str(e)}")
     finally:
         cap.release()
+def show_citizen_data():
+    st.subheader("Dữ liệu công dân đã quét")
+    if not st.session_state.citizens_data.empty:
+        st.dataframe(st.session_state.citizens_data)
+    else:
+        st.info("Chưa có dữ liệu công dân nào.")
+
+def main():
+    st.title("Hệ thống Quản lý Công dân")
+    
+    menu = ["Trang chủ", "Quét QR CCCD", "Nhận diện khuôn mặt", "Xem dữ liệu"]
+    choice = st.sidebar.selectbox("Menu", menu)
+    
+    if choice == "Trang chủ":
+        st.write("Chào mừng đến với hệ thống quản lý công dân")
+        st.write("Vui lòng chọn chức năng từ menu bên trái")
+        
+    elif choice == "Quét QR CCCD":
+        scan_qr_code()
+        
+    elif choice == "Nhận diện khuôn mặt":
+        face_recognition_system()
+        
+    elif choice == "Xem dữ liệu":
+        show_citizen_data()
+
+if __name__ == '__main__':
+    main()
