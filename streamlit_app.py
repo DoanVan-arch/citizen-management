@@ -54,7 +54,10 @@ st.markdown("""
 
 # Khởi tạo session state
 if 'citizens_data' not in st.session_state:
-    st.session_state.citizens_data = pd.DataFrame(columns=['id', 'name', 'dob', 'address','info', 'scan_date', 'image_path'])
+    st.session_state.citizens_data = pd.DataFrame(columns=[
+        'id', 'cccd', 'name', 'dob', 'sex', 'address', 'expdate', 'scan_date', 'image_path'
+    ])
+
 
 def init_camera():
     """
@@ -88,31 +91,22 @@ def process_image_for_qr(image):
         # Giải mã QR
         decoded_objects = decode(frame_rgb)
         
-        for obj in decoded_objects:
+       for obj in decoded_objects:
             qr_data = obj.data.decode('utf-8')
             citizen_info = qr_data.split('|')
             
-            if len(citizen_info) >= 4:
-                # Tạo thư mục lưu ảnh nếu chưa tồn tại
-                os.makedirs("uploaded_images", exist_ok=True)
-                
-                # Tạo tên file ảnh với timestamp
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                image_filename = f"citizen_image_{timestamp}.jpg"
-                image_path = os.path.join("uploaded_images", image_filename)
-                
-                # Lưu ảnh
-                if isinstance(image, np.ndarray):
-                    cv2.imwrite(image_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
-                else:
-                    image.save(image_path)
+            if len(citizen_info) >= 7:
+                # ... (phần lưu ảnh giữ nguyên)
 
                 # Tạo bản ghi mới
                 new_data = {
                     'id': citizen_info[0],
-                    'name': citizen_info[1],
-                    'dob': citizen_info[2],
-                    'address': citizen_info[3],
+                    'cccd': citizen_info[1],
+                    'name': citizen_info[2],
+                    'dob': citizen_info[3],
+                    'sex': citizen_info[4],
+                    'address': citizen_info[5],
+                    'expdate': citizen_info[6],
                     'scan_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     'image_path': image_path
                 }
@@ -226,24 +220,26 @@ def scan_qr_code():
             media_stream_constraints={"video": True, "audio": False},
         )
 
-        # Kiểm tra kết quả quét QR
+       # Trong hàm transform của class QRCodeVideoTransformer, sửa phần xử lý khi phát hiện QR:
         if webrtc_ctx.video_transformer:
             if webrtc_ctx.video_transformer.qr_detected:
                 qr_data = webrtc_ctx.video_transformer.qr_data
                 citizen_info = qr_data.split('|')
                 
-                if len(citizen_info) >= 4:
+                if len(citizen_info) >= 7:
                     st.success("Đã quét thành công QR Code!")
                     
                     # Lưu thông tin vào DataFrame
                     new_data = {
                         'id': citizen_info[0],
+                        'cccd': citizen_info[1],
                         'name': citizen_info[2],
                         'dob': citizen_info[3],
-                        'address': citizen_info[4],
-                        'info': qr_data,
+                        'sex': citizen_info[4],
+                        'address': citizen_info[5],
+                        'expdate': citizen_info[6],
                         'scan_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        'image_path': "camera_capture"  # Có thể thêm chức năng chụp ảnh nếu cần
+                        'image_path': "camera_capture"
                     }
                     
                     st.session_state.citizens_data = pd.concat([
@@ -258,21 +254,20 @@ def scan_qr_code():
                     """, unsafe_allow_html=True)
                     
                     st.write(f"**ID:** {citizen_info[0]}")
+                    st.write(f"**Số CCCD:** {citizen_info[1]}")
                     st.write(f"**Họ tên:** {citizen_info[2]}")
                     st.write(f"**Ngày sinh:** {citizen_info[3]}")
-                    st.write(f"**Địa chỉ:** {citizen_info[4]}")
-                    st.write(f"**Info:**{qr_data}")
+                    st.write(f"**Giới tính:** {citizen_info[4]}")
+                    st.write(f"**Địa chỉ:** {citizen_info[5]}")
+                    st.write(f"**Ngày hết hạn:** {citizen_info[6]}")
 
 
 def show_citizen_data():
-    """
-    Hiển thị dữ liệu công dân đã quét
-    """
     st.markdown("<h2 style='text-align: center;'>Dữ liệu Công dân</h2>", unsafe_allow_html=True)
     
     if not st.session_state.citizens_data.empty:
         for index, row in st.session_state.citizens_data.iterrows():
-            with st.expander(f"Công dân: {row['name']} - ID: {row['id']}"):
+            with st.expander(f"Công dân: {row['name']} - CCCD: {row['cccd']}"):
                 col1, col2 = st.columns([1, 2])
                 
                 with col1:
@@ -284,14 +279,17 @@ def show_citizen_data():
                 with col2:
                     st.markdown(f"""
                     **ID:** {row['id']}  
+                    **Số CCCD:** {row['cccd']}  
                     **Họ tên:** {row['name']}  
                     **Ngày sinh:** {row['dob']}  
-                    **Địa chỉ:** {row['address']} 
-                    **Info:**{row['info']}
+                    **Giới tính:** {row['sex']}  
+                    **Địa chỉ:** {row['address']}  
+                    **Ngày hết hạn:** {row['expdate']}  
                     **Ngày quét:** {row['scan_date']}
                     """)
     else:
         st.info("Chưa có dữ liệu công dân nào.")
+
 
 def main():
     """
