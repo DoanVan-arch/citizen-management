@@ -18,6 +18,7 @@ st.set_page_config(
 )
 
 # CSS tùy chỉnh
+# Cập nhật phần CSS
 st.markdown("""
     <style>
     .main {
@@ -28,6 +29,14 @@ st.markdown("""
         margin-top: 10px;
         background-color: #0066cc;
         color: white;
+        border-radius: 5px;
+        padding: 10px 20px;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #004d99;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
     .success-message {
         padding: 20px;
@@ -35,6 +44,7 @@ st.markdown("""
         color: white;
         margin-bottom: 15px;
         border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     .error-message {
         padding: 20px;
@@ -42,15 +52,45 @@ st.markdown("""
         color: white;
         margin-bottom: 15px;
         border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
     .info-card {
         padding: 20px;
         background-color: #f8f9fa;
         border-radius: 10px;
         margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    .info-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .feature-button {
+        background-color: #ffffff;
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        margin: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .feature-button:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .camera-feed {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .sidebar .sidebar-content {
+        background-color: #f8f9fa;
     }
     </style>
     """, unsafe_allow_html=True)
+
 
 # Khởi tạo session state
 if 'citizens_data' not in st.session_state:
@@ -58,6 +98,59 @@ if 'citizens_data' not in st.session_state:
         'id', 'cccd', 'name', 'dob', 'sex', 'address', 'expdate', 'scan_date', 'image_path'
     ])
 
+def surveillance_camera():
+    st.markdown("<h2 style='text-align: center;'>Camera Giám sát</h2>", unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.markdown("""
+        <div class="info-card">
+            <h3>Camera Giám sát Trực tiếp</h3>
+            <p>Kết nối với camera để theo dõi và phát hiện đối tượng</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Camera stream với object detection
+        webrtc_ctx = webrtc_streamer(
+            key="surveillance",
+            video_transformer_factory=ObjectDetectionTransformer,
+            rtc_configuration=RTC_CONFIGURATION,
+            media_stream_constraints={"video": True, "audio": False},
+        )
+
+    with col2:
+        st.markdown("""
+        <div class="info-card">
+            <h3>Điều khiển Camera</h3>
+            <p>Các tùy chọn điều khiển camera giám sát</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Các nút điều khiển
+        if st.button("🔄 Làm mới Camera"):
+            st.experimental_rerun()
+            
+        detection_options = st.multiselect(
+            "Chọn đối tượng cần phát hiện",
+            ["Người", "Khuôn mặt", "Phương tiện", "Vật thể khả nghi"],
+            default=["Người"]
+        )
+        
+        sensitivity = st.slider("Độ nhạy phát hiện", 0, 100, 50)
+        
+        if st.button("📸 Chụp ảnh"):
+            st.success("Đã chụp và lưu ảnh thành công!")
+
+# Thêm class cho object detection
+class ObjectDetectionTransformer(VideoTransformerBase):
+    def transform(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        
+        # Thêm logic phát hiện đối tượng ở đây
+        # (Có thể sử dụng OpenCV, YOLO, hoặc các model khác)
+        
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 def init_camera():
     """
@@ -304,36 +397,85 @@ def show_citizen_data():
 
 
 def main():
-    """
-    Hàm chính của ứng dụng
-    """
-    # Sidebar
     st.sidebar.markdown("<h1 style='text-align: center;'>🏛️</h1>", unsafe_allow_html=True)
     st.sidebar.markdown("<h2 style='text-align: center;'>Quản lý Công dân</h2>", unsafe_allow_html=True)
     
-    menu = ["Trang chủ", "Quét QR CCCD", "Xem dữ liệu"]
+    menu = [
+        "Trang chủ",
+        "Quét QR CCCD",
+        "Xem dữ liệu",
+        "Camera Giám sát",
+        "Thống kê",
+        "Cài đặt"
+    ]
+    
     choice = st.sidebar.selectbox("Chọn chức năng", menu)
     
+    # Hiển thị các nút chức năng phụ trong sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### Công cụ nhanh")
+    
+    if st.sidebar.button("📷 Kết nối Camera"):
+        st.session_state.page = "camera"
+        
+    if st.sidebar.button("📊 Báo cáo"):
+        st.session_state.page = "reports"
+        
+    if st.sidebar.button("⚙️ Cài đặt"):
+        st.session_state.page = "settings"
+    
+    # Xử lý các trang
     if choice == "Trang chủ":
-        st.markdown("<h1 style='text-align: center;'>Hệ thống Quản lý Công dân</h1>", unsafe_allow_html=True)
+        show_homepage()
+    elif choice == "Quét QR CCCD":
+        scan_qr_code()
+    elif choice == "Xem dữ liệu":
+        show_citizen_data()
+    elif choice == "Camera Giám sát":
+        surveillance_camera()
+    elif choice == "Thống kê":
+        show_statistics()
+    elif choice == "Cài đặt":
+        show_settings()
+
+def show_homepage():
+    st.markdown("<h1 style='text-align: center;'>Hệ thống Quản lý Công dân</h1>", unsafe_allow_html=True)
+    
+    # Grid layout cho các chức năng
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
         st.markdown("""
-        <div class="info-card">
-            <h2>Chào mừng! 👋</h2>
-            <p>Đây là hệ thống quản lý thông tin công dân thông qua quét mã QR trên CCCD.</p>
-            <h3>Các chức năng chính:</h3>
-            <ul>
-                <li>Quét QR từ CCCD qua camera</li>
-                <li>Tải lên ảnh CCCD để quét</li>
-                <li>Xem và quản lý dữ liệu công dân</li>
-            </ul>
+        <div class="feature-button">
+            <h3>📷 Quét QR CCCD</h3>
+            <p>Quét và xử lý thông tin từ CCCD</p>
         </div>
         """, unsafe_allow_html=True)
         
-    elif choice == "Quét QR CCCD":
-        scan_qr_code()
+    with col2:
+        st.markdown("""
+        <div class="feature-button">
+            <h3>👥 Quản lý dữ liệu</h3>
+            <p>Xem và quản lý thông tin công dân</p>
+        </div>
+        """, unsafe_allow_html=True)
         
-    elif choice == "Xem dữ liệu":
-        show_citizen_data()
+    with col3:
+        st.markdown("""
+        <div class="feature-button">
+            <h3>🎥 Giám sát</h3>
+            <p>Theo dõi qua camera an ninh</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+def show_statistics():
+    st.markdown("<h2 style='text-align: center;'>Thống kê Hệ thống</h2>", unsafe_allow_html=True)
+    # Thêm code hiển thị thống kê
+
+def show_settings():
+    st.markdown("<h2 style='text-align: center;'>Cài đặt Hệ thống</h2>", unsafe_allow_html=True)
+    # Thêm code cài đặt
+
 
 if __name__ == '__main__':
     main()
