@@ -6,6 +6,8 @@ import pandas as pd
 from datetime import datetime
 import os
 from PIL import Image
+from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
+import av
 
 # Thiết lập giao diện trang
 st.set_page_config(
@@ -128,6 +130,48 @@ def process_image_for_qr(image):
     except Exception as e:
         return False, f"Lỗi khi xử lý ảnh: {str(e)}"
 
+# Thêm vào đầu file
+RTC_CONFIGURATION = RTCConfiguration(
+    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+)
+
+class QRCodeVideoTransformer(VideoTransformerBase):
+    def __init__(self):
+        self.qr_detected = False
+        self.qr_data = None
+
+    def transform(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        
+        # Xử lý QR code
+        try:
+            # Chuyển sang RGB để xử lý
+            frame_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            decoded_objects = decode(frame_rgb)
+            
+            for obj in decoded_objects:
+                # Vẽ khung xung quanh QR code
+                points = obj.polygon
+                if len(points) > 4:
+                    hull = cv2.convexHull(np.array([point for point in points], dtype=np.float32))
+                    cv2.polylines(img, [hull], True, (0, 255, 0), 2)
+                else:
+                    cv2.polylines(img, [np.array(points, dtype=np.int32)], True, (0, 255, 0), 2)
+                
+                # Giải mã QR
+                qr_data = obj.data.decode('utf-8')
+                self.qr_data = qr_data
+                self.qr_detected = True
+                
+                # Hiển thị thông tin
+                cv2.putText(img, "QR Code Detected!", (10, 30),
+                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                
+        except Exception as e:
+            print(f"Error processing QR code: {str(e)}")
+            
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
+
 def scan_qr_code():
     """
     Chức năng quét mã QR từ camera hoặc ảnh tải lên
@@ -166,66 +210,56 @@ def scan_qr_code():
             <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px;">
                 <h4 style="color: #856404;">⚠️ Lưu ý quan trọng:</h4>
                 <ol style="color: #856404;">
-                    <li>Khi bấm "Bật Camera", trình duyệt sẽ yêu cầu quyền truy cập camera</li>
+                    <li>Khi bấm "START", trình duyệt sẽ yêu cầu quyền truy cập camera</li>
                     <li>Vui lòng chọn "Allow" hoặc "Cho phép" để sử dụng tính năng này</li>
-                    <li>Nếu đã từ chối trước đó, vui lòng:
-                        <ul>
-                            <li>Kiểm tra biểu tượng camera trên thanh địa chỉ</li>
-                            <li>Hoặc vào cài đặt trình duyệt để cấp quyền camera</li>
-                        </ul>
-                    </li>
+                    <li>Đảm bảo camera không bị ứng dụng khác sử dụng</li>
                 </ol>
             </div>
         </div>
         """, unsafe_allow_html=True)
-        
-        start_camera = st.button("Bật Camera")
-        
-        if start_camera:
-            # Hiển thị thông báo đang khởi tạo camera
-            with st.spinner('Đang kết nối với camera...'):
-                camera = init_camera()
+
+        # Khởi tạo WebRTC streamer
+        webrtc_ctx = webrtc_streamer(
+            key="qr-scanner",
+            video_transformer_factory=QRCodeVideoTransformer,
+            rtc_configuration=RTC_CONFIGURATION,
+            media_stream_constraints={"video": True, "audio": False},
+        )
+
+        # Kiểm tra kết quả quét QR
+        if webrtc_ctx.video_transformer:
+            if webrtc_ctx.video_transformer.qr_detected:
+                qr_data = webrtc_ctx.video_transformer.qr_data
+                citizen_info = qr_data.split('|')
                 
-            if camera is not None:
-                st.success("Đã kết nối camera thành công!")
-                frame_placeholder = st.empty()
-                stop_button = st.button("Dừng quét")
-                
-                try:
-                    while not stop_button:
-                        ret, frame = camera.read()
-                        if not ret:
-                            st.error("Không thể đọc frame từ camera")
-                            break
-                        
-                        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                        success, message = process_image_for_qr(frame_rgb)
-                        
-                        if success:
-                            st.markdown(f'<div class="success-message">{message}</div>', unsafe_allow_html=True)
-                            break
-                        
-                        frame_placeholder.image(frame_rgb, channels="RGB")
-                except Exception as e:
-                    st.error(f"""
-                    Lỗi khi sử dụng camera: {str(e)}
+                if len(citizen_info) >= 4:
+                    st.success("Đã quét thành công QR Code!")
                     
-                    Vui lòng kiểm tra:
-                    1. Quyền truy cập camera trong trình duyệt
-                    2. Camera có đang được ứng dụng khác sử dụng không
-                    3. Camera có được kết nối đúng cách không
-                    """)
-                finally:
-                    camera.release()
-            else:
-                st.error("""
-                Không thể kết nối với camera!
-                
-                Vui lòng kiểm tra:
-                1. Camera có được kết nối với máy tính không
-                2. Quyền truy cập camera trong trình duyệt
-                3. Camera không bị ứng dụng khác sử dụng
-                """)
+                    # Lưu thông tin vào DataFrame
+                    new_data = {
+                        'id': citizen_info[0],
+                        'name': citizen_info[1],
+                        'dob': citizen_info[2],
+                        'address': citizen_info[3],
+                        'scan_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        'image_path': "camera_capture"  # Có thể thêm chức năng chụp ảnh nếu cần
+                    }
+                    
+                    st.session_state.citizens_data = pd.concat([
+                        st.session_state.citizens_data,
+                        pd.DataFrame([new_data])
+                    ], ignore_index=True)
+                    
+                    # Hiển thị thông tin
+                    st.markdown("""
+                    <div style="background-color: #e8f5e9; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                        <h4 style="color: #2e7d32;">Thông tin công dân:</h4>
+                    """, unsafe_allow_html=True)
+                    
+                    st.write(f"**ID:** {citizen_info[0]}")
+                    st.write(f"**Họ tên:** {citizen_info[1]}")
+                    st.write(f"**Ngày sinh:** {citizen_info[2]}")
+                    st.write(f"**Địa chỉ:** {citizen_info[3]}")
 
 
 def show_citizen_data():
