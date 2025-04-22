@@ -96,7 +96,19 @@ def process_image_for_qr(image):
             citizen_info = qr_data.split('|')
             
             if len(citizen_info) >= 7:
-                # ... (phần lưu ảnh giữ nguyên)
+                # Tạo thư mục lưu ảnh nếu chưa tồn tại
+                os.makedirs("uploaded_images", exist_ok=True)
+                
+                # Tạo tên file ảnh với timestamp
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                image_filename = f"citizen_image_{timestamp}.jpg"
+                image_path = os.path.join("uploaded_images", image_filename)
+                
+                # Lưu ảnh
+                if isinstance(image, np.ndarray):
+                    cv2.imwrite(image_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
+                else:
+                    image.save(image_path)
     
                 # Tạo bản ghi mới
                 new_data = {
