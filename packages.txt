@@ -1,0 +1,7 @@
+libgl1
+libglib2.0-0
+libsm6
+libxext6
+libxrender-dev
+libpython3-dev
+python3-opencv
