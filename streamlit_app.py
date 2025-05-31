@@ -263,7 +263,7 @@ def surveillance_camera():
         if camera_option == "Camera trực tiếp (WebRTC)":
             try:
                 # Enhanced WebRTC streamer with better error handling
-                webrtc_streamer(key="example", video_frame_callback=video_frame_callback)
+                webrtc_streamer(key="surveillance")
                 # webrtc_ctx = safe_webrtc_streamer(
                 #     key="surveillance",
                 #    # video_processor_factory=ObjectDetectionTransformer,
