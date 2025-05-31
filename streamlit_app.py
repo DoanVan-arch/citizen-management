@@ -556,17 +556,17 @@ def main():
     st.sidebar.markdown("### Chức năng nhanh")
     
     if st.sidebar.button("📷 Camera"):
-        st.session_state.page = "camera"
+     #   st.session_state.page = "camera"
         surveillance_camera()
       #  st.experimental_rerun()
         
     if st.sidebar.button("📊 Báo cáo"):
-        st.session_state.page = "reports"
+     #   st.session_state.page = "reports"
         show_statistics()
      #   st.experimental_rerun()
         
     if st.sidebar.button("⚙️ Cài đặt"):
-        st.session_state.page = "settings"
+     #   st.session_state.page = "settings"
         show_settings()
      #   st.experimental_rerun()
     
