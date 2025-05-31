@@ -1,15 +1,21 @@
+# .streamlit/config.toml
 [server]
+headless = true
+port = 8501
 enableCORS = false
 enableXsrfProtection = false
-enableWebsocketCompression = false
+maxUploadSize = 200
+fileWatcherType = "none"
 
 [browser]
-serverAddress = "localhost"
-serverPort = 8501
+gatherUsageStats = false
+serverAddress = "0.0.0.0"
 
-[theme]
-primaryColor = "#0066cc"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#f8f9fa"
-textColor = "#262730"
-font = "sans serif"
+[client]
+showErrorDetails = true
+toolbarMode = "viewer"
+
+# WebRTC specific settings
+[webrtc]
+rtcConfiguration = true
+asyncProcessing = true

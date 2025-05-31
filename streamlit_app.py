@@ -861,14 +861,49 @@ def show_settings():
     st.markdown("<h2 style='text-align: center;'>Cài đặt</h2>", unsafe_allow_html=True)
     st.write("Tùy chỉnh các thiết lập của hệ thống tại đây.")
     # Thêm code cài đặt
+from pathlib import Path
 
-
+# Cloud environment detection
+def is_streamlit_cloud():
+    """Detect if running on Streamlit Cloud"""
+    return (
+        os.getenv("STREAMLIT_SHARING_MODE") == "true" or
+        "streamlit.io" in os.getenv("HOSTNAME", "") or
+        os.path.exists("/.streamlit")
+    )
+def setup_cloud_environment():
+    """Setup environment cho Streamlit Cloud"""
+    
+    if is_streamlit_cloud():
+        st.sidebar.info("🌐 Running on Streamlit Cloud")
+        
+        # Cloud-specific configurations
+        os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "0"  # Disable MSMF on Windows
+        os.environ["OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS"] = "0"
+        
+        # Temporary directories
+        temp_dirs = ["/tmp/uploads", "/tmp/rtc_cache", "/tmp/video_processing"]
+        for temp_dir in temp_dirs:
+            Path(temp_dir).mkdir(exist_ok=True)
+        
+        return True
+    else:
+        st.sidebar.info("💻 Running locally")
+        return False
 def main():
     # Kiểm tra đăng nhập
     if not st.session_state.logged_in:
         login_page()
         return
-    
+    is_cloud = setup_cloud_environment()
+    if is_cloud:
+        st.info("""
+        🌐 **Cloud Deployment Notes:**
+        - HTTPS enabled automatically
+        - Camera access requires user permission
+        - File uploads limited to 200MB
+        - Temporary files auto-cleaned
+        """)
     # Hiển thị giao diện chính sau khi đăng nhập
     st.sidebar.markdown("<h1 style='text-align: center;'>Chào mừng 📷</h1>", unsafe_allow_html=True)
     st.sidebar.markdown("<h2 style='text-align: center;'>Quản lý Công dân</h2>", unsafe_allow_html=True)
