@@ -484,6 +484,7 @@ def surveillance_camera():
                 
         else:
             # Alternative: File upload for surveillance
+            mtcnn, facenet = load_face_models()
             uploaded_file = st.file_uploader(
                 "Tải lên video hoặc ảnh để phân tích",
                 type=['mp4', 'avi', 'mov', 'jpg', 'jpeg', 'png'],
