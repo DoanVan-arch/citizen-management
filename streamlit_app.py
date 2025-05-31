@@ -471,7 +471,7 @@ def show_homepage():
         if st.button("Quét QR CCCD"):
             st.session_state.page = "scan_qr"
            # scan_qr_code()
-            st.experimental_rerun()
+            #st.experimental_rerun()
         
     with col2:
         st.markdown("""
@@ -485,7 +485,7 @@ def show_homepage():
         if st.button("Xem dữ liệu công dân"):
             st.session_state.page = "view_data"
             #show_citizen_data()
-            st.experimental_rerun()
+          #  st.experimental_rerun()
         
     with col3:
         st.markdown("""
@@ -499,7 +499,7 @@ def show_homepage():
         if st.button("Camera giám sát"):
             st.session_state.page = "camera"
            # surveillance_camera()
-            st.experimental_rerun()
+         #   st.experimental_rerun()
     
     # Kiu1ec3m tra nu1ebfu cu00f3 chuyu1ec3n trang tu1eeb cu00e1c nu00fat
     if 'page' in st.session_state:
@@ -531,7 +531,7 @@ def main():
         return
     
     # Hiu1ec3n thu1ecb giao diu1ec7n chu00ednh sau khi u0111u0103ng nhu1eadp
-    st.sidebar.markdown("<h1 style='text-align: center;'>Chào mừng</h1>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h1 style='text-align: center;'>Chào mừng 📷</h1>", unsafe_allow_html=True)
     st.sidebar.markdown("<h2 style='text-align: center;'>Quản lý Công dân</h2>", unsafe_allow_html=True)
     
     # Hiu1ec3n thu1ecb thu00f4ng tin ngu01b0u1eddi du00f9ng u0111u0103ng nhu1eadp
@@ -558,17 +558,17 @@ def main():
     if st.sidebar.button("📷 Camera"):
         st.session_state.page = "camera"
         surveillance_camera()
-        st.experimental_rerun()
+      #  st.experimental_rerun()
         
     if st.sidebar.button("📊 Báo cáo"):
         st.session_state.page = "reports"
         show_statistics()
-        st.experimental_rerun()
+     #   st.experimental_rerun()
         
     if st.sidebar.button("⚙️ Cài đặt"):
         st.session_state.page = "settings"
         show_settings()
-        st.experimental_rerun()
+     #   st.experimental_rerun()
     
     # Nu00fat u0111u0103ng xuu1ea5t
     if st.sidebar.button("🚪 Đăng xuất"):
