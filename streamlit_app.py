@@ -148,6 +148,14 @@ USERS = {
     "admin": "admin123",
     "user": "user123"
 }
+def setup_asyncio():
+    """Setup asyncio event loop for WebRTC"""
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_closed():
+            asyncio.set_event_loop(asyncio.new_event_loop())
+    except RuntimeError:
+        asyncio.set_event_loop(asyncio.new_event_loop())
 def webrtc_context():
     """Context manager for WebRTC operations"""
     try:
