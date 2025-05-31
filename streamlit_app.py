@@ -235,7 +235,14 @@ async def process_offer(offer, video_processor=None):
     pc_id = str(uuid.uuid4())
     pc = RTCPeerConnection()
     peer_connections[pc_id] = pc
+    await pc.setRemoteDescription(offer_obj)
+    answer = await pc.createAnswer()
+    await pc.setLocalDescription(answer)
     
+    # Lưu ID kết nối
+    st.session_state.peer_connection_id = pc_id
+    
+   # return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}, pc_id
     relay = MediaRelay()
     
     @pc.on("track")
@@ -274,6 +281,7 @@ async def process_offer(offer, video_processor=None):
         st.session_state.peer_connection_id = pc_id
         
         return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}, pc_id
+    
 
 async def close_peer_connection(pc_id):
     if pc_id in peer_connections:
