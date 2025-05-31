@@ -15,4 +15,3 @@ python3-opencv
 zbar-tools
 libzbar0
 libzbar-dev
-aiortc
