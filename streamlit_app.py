@@ -9,6 +9,7 @@ import os
 from PIL import Image
 #from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration 
 import av
+from contextlib import contextmanager  # Add this import
 # d:\Codes\citizen-management\streamlit_app.py
 
 
