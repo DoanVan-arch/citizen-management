@@ -645,6 +645,17 @@ def get_ice_connection_fix_config():
     })
     
     return rtc_config
+flip = st.checkbox("Flip")
+
+
+def video_frame_callback(frame):
+    img = frame.to_ndarray(format="bgr24")
+
+    flipped = img[::-1,:,:] if flip else img
+
+    return av.VideoFrame.from_ndarray(flipped, format="bgr24")
+
+    return frame
 def surveillance_camera():
     st.markdown("<h2 style='text-align: center;'>Giám sát Camera</h2>", unsafe_allow_html=True)
     
@@ -677,6 +688,7 @@ def surveillance_camera():
                     mode=WebRtcMode.SENDRECV,
                     rtc_configuration=get_ice_connection_fix_config(),
                     video_processor_factory=ObjectDetectionTransformer,
+                    video_frame_callback=video_frame_callback,
                     media_stream_constraints={
                         "video": {
                     "width": {"min": 320, "ideal": 640, "max": 1280},
