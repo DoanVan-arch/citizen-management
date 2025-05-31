@@ -838,7 +838,6 @@ def scan_qr_code():
                         else:
                             st.error("Không tìm thấy mã QR trong ảnh. Vui lòng thử lại.")
     with tab3:
-        
         st.markdown("""
         ### MTCNN (Multi-task Cascaded Convolutional Networks)
         
@@ -860,7 +859,7 @@ def scan_qr_code():
         - Phân cụm khuôn mặt
         
         Trong ứng dụng này, chúng tôi sử dụng MTCNN để phát hiện khuôn mặt và có thể mở rộng với FaceNet để nhận dạng.
-        """)
+        """,unsafe_allow_html=True)
 def display_latest_citizen_info():
     """Display information of the most recently added citizen"""
     if not st.session_state.citizens_data.empty:
