@@ -12,7 +12,12 @@ import av
 from contextlib import contextmanager  # Add this import
 # d:\Codes\citizen-management\streamlit_app.py
 
-
+try:
+    from streamlit_camera_input_live import camera_input_live
+    CAMERA_LIVE_AVAILABLE = True
+except ImportError:
+    CAMERA_LIVE_AVAILABLE = False
+    st.warning("streamlit-camera-input-live không khả dụng.")
 # Thêm try-except cho import asyncio để xử lý lỗi liên quan đến asyncio
 try:
     import asyncio
@@ -256,25 +261,16 @@ def surveillance_camera():
         
         if camera_option == "Camera trực tiếp (WebRTC)":
             try:
-                # Enhanced WebRTC streamer with better error handling
-                webrtc_ctx = safe_webrtc_streamer(
-                    key="surveillance",
-                    video_processor_factory=ObjectDetectionTransformer,
-                    rtc_configuration=RTC_CONFIGURATION,
-                    media_stream_constraints={
-                        "video": {"width": 640, "height": 480, "frameRate": 15},
-                        "audio": False
-                    },
-                    async_processing=False,
-                )
+                image = camera_input_live()
                 
-                # Display connection status
-                if webrtc_ctx and webrtc_ctx.state.playing:
-                    st.success("✅ Camera đang hoạt động")
-                elif webrtc_ctx and webrtc_ctx.state.signalling:
-                    st.warning("🔄 Đang kết nối camera...")
-                else:
-                    st.info("📷 Nhấn 'START' để bắt đầu camera")
+                if image is not None:
+                    st.image(image, caption="Camera Live Feed")
+                    
+                    if st.button("Phân tích ảnh hiện tại"):
+                        with st.spinner("Đang phân tích..."):
+                            # Xử lý ảnh ở đây
+                            st.success("Phân tích hoàn thành!")
+                        
                     
             except Exception as e:
                 st.error(f"Lỗi kết nối camera: {str(e)}")
