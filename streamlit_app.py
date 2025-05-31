@@ -185,7 +185,7 @@ def login_page():
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.success(f"Đăng nhập thành công! Chào mừng, {username}")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Tên đăng nhập hoặc mật khẩu không đúng!")
 
@@ -244,8 +244,8 @@ def surveillance_camera():
         # Cu00e1c nu00fat u0111iu1ec1u khiu1ec3n
         if st.button("Bắt đầu giám sát"):
             st.session_state.surveillance_active = True
-         #   st.experimental_rerun()
-            st.experimental_rerun()
+         #   st.rerun()
+            st.rerun()
             
         detection_options = st.multiselect(
             "Chọn các đối tượng cần phát hiện:",
@@ -536,7 +536,7 @@ def show_homepage():
         if st.button("Quét QR CCCD"):
             st.session_state.page = "scan_qr"
             st.session_state.menu_choice = "Quét QR CCCD"
-            st.experimental_rerun()
+            st.rerun()
         
     with col2:
         st.markdown("""
@@ -550,9 +550,9 @@ def show_homepage():
         if st.button("Xem dữ liệu công dân"):
             st.session_state.page = "view_data"
             st.session_state.menu_choice = "Xem dữ liệu"
-            st.experimental_rerun()
+            st.rerun()
             #show_citizen_data()
-          #  st.experimental_rerun()
+          #  st.rerun()
         
     with col3:
         st.markdown("""
@@ -567,7 +567,7 @@ def show_homepage():
             st.session_state.page = "camera"
             st.session_state.menu_choice = "Camera Giám sát"
            # surveillance_camera()
-         #   st.experimental_rerun()
+         #   st.rerun()
     
     # Kiu1ec3m tra nu1ebfu cu00f3 chuyu1ec3n trang tu1eeb cu00e1c nu00fat
     if 'page' in st.session_state:
@@ -631,24 +631,24 @@ def main():
     if st.sidebar.button("📷 Camera"):
         st.session_state.page = "camera"
         st.session_state.menu_choice = "Camera Giám sát"
-        st.experimental_rerun()
+        st.rerun()
       
     if st.sidebar.button("📊 Báo cáo"):
         st.session_state.page = "reports"
         st.session_state.menu_choice = "Thống kê"
-        st.experimental_rerun()
+        st.rerun()
         
     if st.sidebar.button("⚙️ Cài đặt"):
         st.session_state.page = "settings"
         #show_settings()
         st.session_state.menu_choice = "Cài đặt"
-       # st.experimental_rerun()
+       # st.rerun()
     
     # Nu00fat u0111u0103ng xuu1ea5t
     if st.sidebar.button("🚪 Đăng xuất"):
         st.session_state.logged_in = False
         st.session_state.username = ""
-        st.experimental_rerun()
+        st.rerun()
     if choice == "Trang chủ":
         show_homepage()
     elif choice == "Quét QR CCCD":
