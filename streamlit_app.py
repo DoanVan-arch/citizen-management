@@ -148,7 +148,6 @@ USERS = {
     "admin": "admin123",
     "user": "user123"
 }
-@contextmanager
 def webrtc_context():
     """Context manager for WebRTC operations"""
     try:
