@@ -364,7 +364,7 @@ async def process_offer(offer, video_processor=None):
 
 # Lấy thông tin TURN server từ API
     response = requests.get(
-        "https://yourappname.metered.live/api/v1/turn/credentials",
+        "https://iewcom.metered.live/api/v1/turn/credentials",
         params={"apiKey": "5b0cc93867e02c9b2e8ef46de385169008aa"}
     )
     ice_servers = response.json()
