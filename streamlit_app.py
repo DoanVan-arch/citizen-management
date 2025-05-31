@@ -8,7 +8,20 @@ import os
 from PIL import Image
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
 import av
+# d:\Codes\citizen-management\streamlit_app.py
 
+
+import asyncio
+import threading
+
+# Cập nhật import cho streamlit-webrtc
+try:
+    from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
+    import av
+    WEBRTC_AVAILABLE = True
+except ImportError:
+    WEBRTC_AVAILABLE = False
+    st.warning("streamlit-webrtc không khả dụng. Chỉ sử dụng chức năng upload ảnh.")
 # Thiu1ebft lu1eadp giao diu1ec7n trang
 st.set_page_config(
     page_title="HỆ THỐNG QUẢN LÝ CÔNG DÂN",
@@ -217,7 +230,7 @@ def surveillance_camera():
         if st.button("Bắt đầu giám sát"):
             st.session_state.surveillance_active = True
          #   st.experimental_rerun()
-            st.experimental_retrun()
+            st.experimental_rerun()
             
         detection_options = st.multiselect(
             "Chọn các đối tượng cần phát hiện:",
