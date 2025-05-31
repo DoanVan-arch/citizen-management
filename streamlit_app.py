@@ -467,7 +467,12 @@ class FlipVideoProcessor(VideoProcessor):
         img = frame.to_ndarray(format="bgr24")
         flipped = img[::-1,:,:]
         return av.VideoFrame.from_ndarray(flipped, format="bgr24")
-
+rtc_configuration = RTCConfiguration({
+            "iceServers": [
+                {"urls": ["stun:stun.l.google.com:19302"]}
+               
+            ]
+        })
 def surveillance_camera():
     st.markdown("<h2 style='text-align: center;'>Giám sát Camera</h2>", unsafe_allow_html=True)
     
@@ -496,7 +501,7 @@ def surveillance_camera():
                     webrtc_ctx = webrtc_streamer(
                     key="camera-stream",
                     mode=WebRtcMode.SENDRECV,
-                    #rtc_configuration=rtc_configuration,
+                    rtc_configuration=rtc_configuration,
                     video_processor_factory=lambda: ObjectDetectionTransformer,
                     media_stream_constraints={
                         "video": True,
