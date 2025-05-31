@@ -263,14 +263,15 @@ def surveillance_camera():
                     rtc_configuration={"iceServers": ice_servers},
                     video_processor_factory=ObjectDetectionTransformer,
                     video_frame_callback=video_frame_callback,
-                    media_stream_constraints={
-                        "video": {
-                    "width": {"min": 320, "ideal": 640, "max": 1280},
-                    "height": {"min": 240, "ideal": 480, "max": 720},
-                    "frameRate": {"min": 10, "ideal": 15, "max": 30}  # Lower FPS for stability
-                },
-                        "audio": False
-                    },
+                   media_stream_constraints = {
+    "video": {
+        "width": {"min": 1280, "ideal": 1920, "max": 3840},
+        "height": {"min": 720, "ideal": 1080, "max": 2160},
+        "frameRate": {"min": 15, "ideal": 30, "max": 60}
+    },
+    "audio": false
+},
+
                     async_processing=False,
                     sendback_audio=False,
                 )
@@ -504,14 +505,15 @@ def scan_qr_code():
                     mode=WebRtcMode.SENDRECV,
                     rtc_configuration={"iceServers": ice_servers},
                     video_processor_factory=lambda: st.session_state.qr_processor,
-                    media_stream_constraints={
-                        "video": {
-                            "width": {"min": 480, "ideal": 640, "max": 1280},
-                            "height": {"min": 360, "ideal": 480, "max": 720},
-                            "frameRate": {"min": 15, "ideal": 20, "max": 30}
-                        },
-                        "audio": False
-                    },
+                    media_stream_constraints = {
+    "video": {
+        "width": {"min": 1280, "ideal": 1920, "max": 3840},
+        "height": {"min": 720, "ideal": 1080, "max": 2160},
+        "frameRate": {"min": 15, "ideal": 30, "max": 60}
+    },
+    "audio": false
+}
+
                     async_processing=False,
                     sendback_audio=False,
                 )
