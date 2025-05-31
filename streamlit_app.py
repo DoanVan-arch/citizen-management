@@ -12,7 +12,7 @@ import av
 # Thiu1ebft lu1eadp giao diu1ec7n trang
 st.set_page_config(
     page_title="HỆ THỐNG QUẢN LÝ CÔNG DÂN",
-    page_icon="ud83cudfdbufe0f",
+    page_icon="📋",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -470,7 +470,8 @@ def show_homepage():
         # Nu00fat ku1ebft nu1ed1i vu1edbi chu1ee9c nu0103ng quu00e9t QR
         if st.button("Quét QR CCCD"):
             st.session_state.page = "scan_qr"
-            st.experimental_rerun()
+            scan_qr_code()
+          #  st.experimental_rerun()
         
     with col2:
         st.markdown("""
@@ -483,7 +484,8 @@ def show_homepage():
         # Nu00fat ku1ebft nu1ed1i vu1edbi chu1ee9c nu0103ng quu1ea3n lu00fd du1eef liu1ec7u
         if st.button("Xem dữ liệu công dân"):
             st.session_state.page = "view_data"
-            st.experimental_rerun()
+            show_citizen_data()
+          #  st.experimental_rerun()
         
     with col3:
         st.markdown("""
@@ -494,9 +496,10 @@ def show_homepage():
         """, unsafe_allow_html=True)
         
         # Nu00fat ku1ebft nu1ed1i vu1edbi chu1ee9c nu0103ng camera giu00e1m su00e1t
-        if st.button("Camera giu00e1m su00e1t"):
+        if st.button("Camera giám sát"):
             st.session_state.page = "camera"
-            st.experimental_rerun()
+            surveillance_camera()
+           # st.experimental_rerun()
     
     # Kiu1ec3m tra nu1ebfu cu00f3 chuyu1ec3n trang tu1eeb cu00e1c nu00fat
     if 'page' in st.session_state:
@@ -554,15 +557,18 @@ def main():
     
     if st.sidebar.button("📷 Camera"):
         st.session_state.page = "camera"
-        st.experimental_rerun()
+        surveillance_camera()
+      #  st.experimental_rerun()
         
     if st.sidebar.button("📊 Báo cáo"):
         st.session_state.page = "reports"
-        st.experimental_rerun()
+        show_statistics()
+       # st.experimental_rerun()
         
     if st.sidebar.button("⚙️ Cài đặt"):
         st.session_state.page = "settings"
-        st.experimental_rerun()
+        show_settings()
+      #  st.experimental_rerun()
     
     # Nu00fat u0111u0103ng xuu1ea5t
     if st.sidebar.button("🚪 Đăng xuất"):
