@@ -570,19 +570,19 @@ def main():
         st.session_state.page = "camera"
         surveillance_camera()
        # choice.set = "Camera Giám sát"
-      #  st.experimental_rerun()
+        st.experimental_rerun()
       
     if st.sidebar.button("📊 Báo cáo"):
         st.session_state.page = "reports"
         show_statistics()
         choice = "Thống kê"
-     #   st.experimental_rerun()
+        st.experimental_rerun()
         
     if st.sidebar.button("⚙️ Cài đặt"):
         st.session_state.page = "settings"
         show_settings()
         choice = "Cài đặt"
-     #   st.experimental_rerun()
+        st.experimental_rerun()
     
     # Nu00fat u0111u0103ng xuu1ea5t
     if st.sidebar.button("🚪 Đăng xuất"):
