@@ -182,7 +182,7 @@ def surveillance_camera():
         try:
             webrtc_ctx = webrtc_streamer(
                 key="surveillance",
-                video_transformer_factory=ObjectDetectionTransformer,
+                video_processor_factory=ObjectDetectionTransformer,
                 rtc_configuration=RTC_CONFIGURATION,
                 media_stream_constraints={
                     "video":True, 
@@ -217,7 +217,7 @@ def surveillance_camera():
         if st.button("Bắt đầu giám sát"):
             st.session_state.surveillance_active = True
          #   st.experimental_rerun()
-            st.experimental_rerun()
+            st.experimental_retrun()
             
         detection_options = st.multiselect(
             "Chọn các đối tượng cần phát hiện:",
@@ -408,7 +408,7 @@ def scan_qr_code():
         # Khu1edfi tu1ea1o WebRTC streamer
         webrtc_ctx = webrtc_streamer(
             key="qr-scanner",
-            video_transformer_factory=QRCodeVideoTransformer,
+            video_processor_factory=QRCodeVideoTransformer,
             rtc_configuration=RTC_CONFIGURATION,
             media_stream_constraints={"video": True, "audio": False},
         )
