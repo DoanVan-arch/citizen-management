@@ -120,6 +120,10 @@ if 'username' not in st.session_state:
 # Thu00eam session state cho u0111iu1ec1u hu01b0u1edbng trang
 if 'page' not in st.session_state:
     st.session_state.page = None
+    
+# Thêm session state cho menu choice
+if 'menu_choice' not in st.session_state:
+    st.session_state.menu_choice = "Trang chủ"
 
 # Danh su00e1ch tu00e0i khou1ea3n mu1eabu (trong thu1ef1c tu1ebf nu00ean lu01b0u trong cu01a1 su1edf du1eef liu1ec7u vu00e0 mu00e3 hu00f3a mu1eadt khu1ea9u)
 USERS = {
@@ -467,11 +471,11 @@ def show_homepage():
         </div>
         """, unsafe_allow_html=True)
         
-        # Nu00fat ku1ebft nu1ed1i vu1edbi chu1ee9c nu0103ng quu00e9t QR
+        # Nút kết nối với chức năng quét QR
         if st.button("Quét QR CCCD"):
             st.session_state.page = "scan_qr"
-           # scan_qr_code()
-            #st.experimental_rerun()
+            st.session_state.menu_choice = "Quét QR CCCD"
+            st.experimental_rerun()
         
     with col2:
         st.markdown("""
@@ -481,9 +485,11 @@ def show_homepage():
         </div>
         """, unsafe_allow_html=True)
         
-        # Nu00fat ku1ebft nu1ed1i vu1edbi chu1ee9c nu0103ng quu1ea3n lu00fd du1eef liu1ec7u
+        # Nút kết nối với chức năng quản lý dữ liệu
         if st.button("Xem dữ liệu công dân"):
             st.session_state.page = "view_data"
+            st.session_state.menu_choice = "Xem dữ liệu"
+            st.experimental_rerun()
             #show_citizen_data()
           #  st.experimental_rerun()
         
@@ -563,15 +569,12 @@ def main():
     if st.sidebar.button("📷 Camera"):
         st.session_state.page = "camera"
         st.session_state.menu_choice = "Camera Giám sát"
-       # surveillance_camera()
-       # choice.set = "Camera Giám sát"
-     #   st.experimental_rerun()
+        st.experimental_rerun()
       
     if st.sidebar.button("📊 Báo cáo"):
         st.session_state.page = "reports"
-       # show_statistics()
-        st.session_state.menu_choice  = "Thống kê"
-       # st.experimental_rerun()
+        st.session_state.menu_choice = "Thống kê"
+        st.experimental_rerun()
         
     if st.sidebar.button("⚙️ Cài đặt"):
         st.session_state.page = "settings"
