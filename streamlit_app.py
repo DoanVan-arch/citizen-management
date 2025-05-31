@@ -10,7 +10,7 @@ from PIL import Image
 import av
 from contextlib import contextmanager
 import tempfile
-
+from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
 # Thêm try-except cho import asyncio để xử lý lỗi liên quan đến asyncio
 try:
     import asyncio
@@ -484,7 +484,22 @@ def surveillance_camera():
                 if AIORTC_AVAILABLE:
                     # Sử dụng aiortc
                     processor = FlipVideoProcessor()
-                    video_processor = create_webrtc_component("surveillance", processor)
+                    webrtc_ctx = webrtc_streamer(
+                    key="camera-stream",
+                    mode=WebRtcMode.SENDRECV,
+                    #rtc_configuration=rtc_configuration,
+                    video_processor_factory=lambda: video_processor,
+                    media_stream_constraints={
+                        "video": {
+                            "width": {"min": 640, "ideal": int(resolution.split('x')[0])},
+                            "height": {"min": 480, "ideal": int(resolution.split('x')[1])},
+                            "frameRate": {"min": 10, "ideal": fps, "max": 60}
+                        },
+                        "audio": enable_audio
+                    },
+                    async_processing=True,
+                    sendback_audio=enable_audio,
+                )
                     
                     # Display connection status
                     if st.session_state.peer_connection_id:
