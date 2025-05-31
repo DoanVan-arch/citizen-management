@@ -250,7 +250,7 @@ def surveillance_camera():
             st.success("Ảnh đã được chụp thành công!")
 
 # Thu00eam class cho object detection
-class ObjectDetectionTransformer(VideoTransformerBase):
+class ObjectDetectionTransformer(VideoProcessorBase):
     def recv(self, frame):
        
         img = frame.to_ndarray(format="bgr24")
@@ -342,7 +342,7 @@ RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
 )
 
-class QRCodeVideoTransformer(VideoTransformerBase):
+class QRCodeVideoTransformer(VideoProcessorBase):
     def __init__(self):
         self.qr_detected = False
         self.qr_data = None
