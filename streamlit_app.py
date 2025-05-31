@@ -380,7 +380,14 @@ def process_image_for_qr(image):
         return False, f"Lỗi: {str(e)}"
 
 # Cấu hình RTC với nhiều STUN servers để tăng độ tin cậy
+class ObjectDetectionTransformer(VideoProcessorBase):
+    def __init__(self):
+        self.qr_detected = False
+        self.qr_data = None
 
+    def recv(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 class QRCodeVideoTransformer(VideoProcessorBase):
     def __init__(self):
