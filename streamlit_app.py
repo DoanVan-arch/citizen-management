@@ -490,7 +490,7 @@ def scan_qr_code():
         "height": {"min": 720, "ideal": 1080, "max": 2160},
         "frameRate": {"min": 15, "ideal": 30, "max": 60}
     },
-    "audio": false
+    "audio": False
 },
 
                     async_processing=False,
