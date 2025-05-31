@@ -148,22 +148,54 @@ USERS = {
     "admin": "admin123",
     "user": "user123"
 }
+@contextmanager
+def webrtc_context():
+    """Context manager for WebRTC operations"""
+    try:
+        setup_asyncio()
+        yield
+    except Exception as e:
+        st.error(f"WebRTC Error: {str(e)}")
+        st.info("Please try refreshing the page or use the image upload feature instead.")
+
 def safe_webrtc_streamer(**kwargs):
-    """Wrapper an toàn cho webrtc_streamer với error handling"""
+    """Enhanced wrapper for webrtc_streamer with better error handling"""
     try:
         if not WEBRTC_AVAILABLE:
             st.error("WebRTC không khả dụng. Vui lòng sử dụng chức năng upload ảnh.")
             return None
         
-        # Đảm bảo async_processing=False để tránh lỗi với asyncio
-        if 'async_processing' in kwargs:
-            kwargs['async_processing'] = False
+        # Setup asyncio properly
+        setup_asyncio()
+        
+        # Remove problematic parameters and set safe defaults
+        safe_kwargs = kwargs.copy()
+        safe_kwargs['async_processing'] = False
+        
+        # Add error handling for media constraints
+        if 'media_stream_constraints' not in safe_kwargs:
+            safe_kwargs['media_stream_constraints'] = {
+                "video": {"width": 640, "height": 480, "frameRate": 15}, 
+                "audio": False
+            }
+        
+        with webrtc_context():
+            return webrtc_streamer(**safe_kwargs)
             
-        return webrtc_streamer(**kwargs)
     except Exception as e:
         st.error(f"Lỗi WebRTC: {str(e)}")
-        st.info("Hãy thử sử dụng chức năng upload ảnh thay thế.")
+        st.info("Hãy thử làm mới trang hoặc sử dụng chức năng upload ảnh thay thế.")
         return None
+
+# Update RTC Configuration with more reliable settings
+RTC_CONFIGURATION = RTCConfiguration({
+    "iceServers": [
+        {"urls": ["stun:stun.l.google.com:19302"]},
+        {"urls": ["stun:stun1.l.google.com:19302"]},
+    ],
+    "iceTransportPolicy": "all",
+    "bundlePolicy": "balanced"
+})
 def login_page():
     st.markdown("<h1 style='text-align: center;'>Đăng nhập Hệ thống</h1>", unsafe_allow_html=True)
     
@@ -197,95 +229,97 @@ def surveillance_camera():
     with col1:
         st.markdown("""
         <div class="info-card">
-            <h3>Giám sát an ninh</h3>
-            <p>Theo dõi và phát hiện đối tượng qua camera</p>
+        <h3>Giám sát an ninh</h3>
+        <p>Theo dõi và phát hiện đối tượng qua camera</p>
         </div>
         """, unsafe_allow_html=True)
-        # d:\Codes\citizen-management\streamlit_app.py
-
-# Thay thế cấu hình RTC hiện tại
-      
         
-        # Camera stream với cấu hình thấp hơn
-        try:
-            webrtc_ctx = safe_webrtc_streamer(
-                key="surveillance",
-                video_processor_factory=ObjectDetectionTransformer,
-                rtc_configuration=RTC_CONFIGURATION,
-                media_stream_constraints={
-                    "video":True, 
-                    "audio": False
-                },
-                async_processing=False,  # Tắt xử lý bất đồng bộ để tránh lỗi
+        # Add option to choose between WebRTC and file upload
+        camera_option = st.radio(
+            "Chọn phương thức:",
+            ["Camera trực tiếp (WebRTC)", "Upload video/ảnh"],
+            key="camera_option"
+        )
+        
+        if camera_option == "Camera trực tiếp (WebRTC)":
+            try:
+                # Enhanced WebRTC streamer with better error handling
+                webrtc_ctx = safe_webrtc_streamer(
+                    key="surveillance",
+                    video_processor_factory=ObjectDetectionTransformer,
+                    rtc_configuration=RTC_CONFIGURATION,
+                    media_stream_constraints={
+                        "video": {"width": 640, "height": 480, "frameRate": 15},
+                        "audio": False
+                    },
+                    async_processing=False,
+                )
+                
+                # Display connection status
+                if webrtc_ctx and webrtc_ctx.state.playing:
+                    st.success("✅ Camera đang hoạt động")
+                elif webrtc_ctx and webrtc_ctx.state.signalling:
+                    st.warning("🔄 Đang kết nối camera...")
+                else:
+                    st.info("📷 Nhấn 'START' để bắt đầu camera")
+                    
+            except Exception as e:
+                st.error(f"Lỗi kết nối camera: {str(e)}")
+                st.info("Vui lòng thử sử dụng tùy chọn 'Upload video/ảnh' bên dưới")
+                
+        else:
+            # Alternative: File upload for surveillance
+            uploaded_file = st.file_uploader(
+                "Tải lên video hoặc ảnh để phân tích",
+                type=['mp4', 'avi', 'mov', 'jpg', 'jpeg', 'png'],
+                key="surveillance_upload"
             )
             
-            # Hiển thị trạng thái kết nối
-            if webrtc_ctx.state.playing:
-                st.success("✅ Camera đang hoạt động")
-            elif webrtc_ctx.state.signalling:
-                st.warning("🔄 Đang kết nối camera...")
-            else:
-                st.error("❌ Camera chưa kết nối")
-                
-        except Exception as e:
-            st.error(f"Lỗi kết nối camera: {str(e)}")
-            st.info("Vui lòng thử lại hoặc kiểm tra cài đặt camera")
-
-
+            if uploaded_file is not None:
+                if uploaded_file.type.startswith('image'):
+                    image = Image.open(uploaded_file)
+                    st.image(image, caption="Ảnh đã tải lên", use_column_width=True)
+                    
+                    if st.button("Phân tích ảnh"):
+                        st.success("Đang phân tích ảnh...")
+                        # Add your image analysis logic here
+                        
+                else:
+                    st.video(uploaded_file)
+                    if st.button("Phân tích video"):
+                        st.success("Đang phân tích video...")
+                        # Add your video analysis logic here
 
     with col2:
         st.markdown("""
         <div class="info-card">
-            <h3>Camera Giám Sát</h3>
-            <p>Giám sát trực tiếp từ camera</p>
+        <h3>Điều khiển Camera</h3>
+        <p>Cài đặt và điều khiển camera giám sát</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Cu00e1c nu00fat u0111iu1ec1u khiu1ec3n
-        if st.button("Bắt đầu giám sát"):
-            st.session_state.surveillance_active = True
-         #   st.rerun()
-            st.rerun()
-            
+        # Camera controls
         detection_options = st.multiselect(
             "Chọn các đối tượng cần phát hiện:",
             ["Khuôn mặt", "Phương tiện", "Vật thể khả nghi"],
-            default=["Khuôn mặt"]
+            default=["Khuôn mặt"],
+            key="detection_options"
         )
         
-        sensitivity = st.slider("Độ nhạy phát hiện", 0, 100, 50)
+        sensitivity = st.slider("Độ nhạy phát hiện", 0, 100, 50, key="sensitivity")
         
-        if st.button("Chụp ảnh"):
+        if st.button("Chụp ảnh", key="capture_btn"):
             st.success("Ảnh đã được chụp thành công!")
-
-# Thu00eam class cho object detection
-class ObjectDetectionTransformer(VideoProcessorBase):
-    def recv(self, frame):
-       
-        img = frame.to_ndarray(format="bgr24")
-        
-        # Thu00eam logic phu00e1t hiu1ec7n u0111u1ed1i tu01b0u1ee3ng u1edf u0111u00e2y
-        # (Cu00f3 thu1ec3 su1eed du1ee5ng OpenCV, YOLO, hou1eb7c cu00e1c model khu00e1c)
-        
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
-
-def init_camera():
-    """
-    Khu1edfi tu1ea1o camera vu00e0 kiu1ec3m tra ku1ebft nu1ed1i
-    """
-    try:
-        # Thu1eed ku1ebft nu1ed1i vu1edbi camera cu1ee7a thiu1ebft bu1ecb
-        camera = cv2.VideoCapture(0)
-        
-        # Kiu1ec3m tra xem camera cu00f3 hou1ea1t u0111u1ed9ng khu00f4ng
-        if not camera.isOpened():
-            st.error("Không thể kết nối với camera!")
-            return None
             
-        return camera
-    except Exception as e:
-        st.error(f"Lỗi: {str(e)}")
-        return None
+        # Add troubleshooting section
+        with st.expander("🔧 Khắc phục sự cố"):
+            st.markdown("""
+            **Nếu camera không hoạt động:**
+            1. Làm mới trang (F5)
+            2. Kiểm tra quyền truy cập camera
+            3. Thử sử dụng trình duyệt khác
+            4. Sử dụng tùy chọn 'Upload video/ảnh'
+            """)
 
 def process_image_for_qr(image):
     """
@@ -347,13 +381,7 @@ def process_image_for_qr(image):
         return False, f"Lỗi: {str(e)}"
 
 # Cấu hình RTC với nhiều STUN servers để tăng độ tin cậy
-RTC_CONFIGURATION = RTCConfiguration(
-    {"iceServers": [
-        {"urls": ["stun:stun.l.google.com:19302"]},
-        {"urls": ["stun:stun1.l.google.com:19302"]},
-        {"urls": ["stun:stun2.l.google.com:19302"]}
-    ]}
-)
+
 
 class QRCodeVideoTransformer(VideoProcessorBase):
     def __init__(self):
@@ -391,104 +419,145 @@ class QRCodeVideoTransformer(VideoProcessorBase):
             print(f"Error processing QR code: {str(e)}")
             
         return av.VideoFrame.from_ndarray(img, format="bgr24")
-
 def scan_qr_code():
-    """
-    Chu1ee9c nu0103ng quu00e9t mu00e3 QR tu1eeb camera hou1eb7c u1ea3nh tu1ea3i lu00ean
-    """
+    """Enhanced QR code scanning with better error handling"""
     st.markdown("<h2 style='text-align: center;'>Quét mã QR CCCD</h2>", unsafe_allow_html=True)
     
-    # Chia layout thu00e0nh 2 cu1ed9t
-    col1, col2 = st.columns(2)
+    # Create tabs for different input methods
+    tab1, tab2 = st.tabs(["📁 Upload Ảnh", "📷 Camera"])
     
-    with col1:
+    with tab1:
         st.markdown("""
         <div class="info-card">
-            <h3>Hướng dẫn</h3>
-            <p>Định dạng hỗ trợ: JPG, JPEG, PNG</p>
+        <h3>Tải lên ảnh QR Code</h3>
+        <p>Định dạng hỗ trợ: JPG, JPEG, PNG</p>
         </div>
         """, unsafe_allow_html=True)
         
-        uploaded_file = st.file_uploader("Tải lên ảnh", type=['jpg', 'jpeg', 'png'])
+        uploaded_file = st.file_uploader(
+            "Chọn ảnh chứa QR code", 
+            type=['jpg', 'jpeg', 'png'],
+            key="qr_upload"
+        )
         
         if uploaded_file is not None:
             image = Image.open(uploaded_file)
             st.image(image, caption="Ảnh đã tải lên", use_column_width=True)
             
-            if st.button("Tải ảnh lên"):
-                success, message = process_image_for_qr(image)
-                if success:
-                    st.markdown(f'<div class="success-message">{message}</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown(f'<div class="error-message">{message}</div>', unsafe_allow_html=True)
-
-    with col2:
+            if st.button("Xử lý QR Code", key="process_qr"):
+                with st.spinner("Đang xử lý..."):
+                    success, message = process_image_for_qr(image)
+                    if success:
+                        st.success(message)
+                    else:
+                        st.error(message)
+    
+    with tab2:
         st.markdown("""
         <div class="info-card">
-            <h3>Qúet qua Camera</h3>
-            <p>Vui lòng đảm bảo rằng camera của bạn đã được kết nối và hoạt động bình thường.</p>
-            <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px;">
-                <h4 style="color: #856404;">Hướng dẫn sử dụng:</h4>
-                <ol style="color: #856404;">
-                    <li>Kiểm tra kết nối và cấp quyền truy cập camera trước khi sử dụng</li>
-                    <li>Đặt camera ở vị trí phù hợp để quét mã QR một cách chính xác, ấn nút Allow</li>
-                    <li>Đảm bảo ánh sáng đủ để camera có thể nhận diện mã QR</li>
-                </ol>
-            </div>
+        <h3>Quét qua Camera</h3>
+        <p>Sử dụng camera để quét QR code trực tiếp</p>
         </div>
         """, unsafe_allow_html=True)
-
-        # Khu1edfi tu1ea1o WebRTC streamer
-        webrtc_ctx = safe_webrtc_streamer(
-            key="qr-scanner",
-            video_processor_factory=QRCodeVideoTransformer,
-            rtc_configuration=RTC_CONFIGURATION,
-            media_stream_constraints={"video": True, "audio": False},
-            async_processing=False,
+        
+        # Add option to choose scanning method
+        scan_method = st.radio(
+            "Chọn phương thức quét:",
+            ["Camera WebRTC", "Chụp ảnh từ camera"],
+            key="scan_method"
         )
-
-       # Trong hu00e0m transform cu1ee7a class QRCodeVideoTransformer, su1eeda phu1ea7n xu1eed lu00fd khi phu00e1t hiu1ec7n QR:
-        if webrtc_ctx.video_transformer:
-            if webrtc_ctx.video_transformer.qr_detected:
-                qr_data = webrtc_ctx.video_transformer.qr_data
-                citizen_info = qr_data.split('|')
+        
+        if scan_method == "Camera WebRTC":
+            try:
+                webrtc_ctx = safe_webrtc_streamer(
+                    key="qr-scanner",
+                    video_processor_factory=QRCodeVideoTransformer,
+                    rtc_configuration=RTC_CONFIGURATION,
+                    media_stream_constraints={
+                        "video": {"width": 640, "height": 480, "frameRate": 15},
+                        "audio": False
+                    },
+                    async_processing=False,
+                )
                 
-                if len(citizen_info) >= 7:
-                    st.success("QR code detected and processed successfully!")
-                    
-                    # Lu01b0u thu00f4ng tin vu00e0o DataFrame
-                    new_data = {
-                        'id': citizen_info[0],
-                        'cccd': citizen_info[1],
-                        'name': citizen_info[2],
-                        'dob': citizen_info[3],
-                        'sex': citizen_info[4],
-                        'address': citizen_info[5],
-                        'expdate': citizen_info[6],
-                        'scan_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        'image_path': "camera_capture"
-                    }
-                    
-                    st.session_state.citizens_data = pd.concat([
-                        st.session_state.citizens_data,
-                        pd.DataFrame([new_data])
-                    ], ignore_index=True)
-                    
-                    # Hiu1ec3n thu1ecb thu00f4ng tin
-                    st.markdown("""
-                    <div style="background-color: #e8f5e9; padding: 20px; border-radius: 10px; margin-top: 20px;">
-                        <h4 style="color: #2e7d32;">Thông tin công dân:</h4>
-                    """, unsafe_allow_html=True)
-                    
-                    st.write(f"**ID:** {citizen_info[0]}")
-                    st.write(f"**Số CCCD:** {citizen_info[1]}")
-                    st.write(f"**Họ và tên:** {citizen_info[2]}")
-                    st.write(f"**Ngày sinh:** {citizen_info[3]}")
-                    st.write(f"**Giới tính:** {citizen_info[4]}")
-                    st.write(f"**Địa chỉ:** {citizen_info[5]}")
-                    st.write(f"**Ngày hết hạn:** {citizen_info[6]}")
+                # Process QR detection results
+                if webrtc_ctx and webrtc_ctx.video_transformer:
+                    if hasattr(webrtc_ctx.video_transformer, 'qr_detected') and webrtc_ctx.video_transformer.qr_detected:
+                        process_qr_detection(webrtc_ctx.video_transformer.qr_data)
+                        
+            except Exception as e:
+                st.error(f"Lỗi camera: {str(e)}")
+                st.info("Vui lòng thử sử dụng tùy chọn 'Chụp ảnh từ camera' hoặc 'Upload Ảnh'")
+        
+        else:
+            # Alternative camera capture method
+            if st.button("Chụp ảnh từ camera", key="capture_camera"):
+                st.info("Chức năng này đang được phát triển. Vui lòng sử dụng tùy chọn upload ảnh.")
 
+def process_qr_detection(qr_data):
+    """Process detected QR code data"""
+    try:
+        citizen_info = qr_data.split('|')
+        
+        if len(citizen_info) >= 7:
+            st.success("✅ QR code đã được phát hiện và xử lý thành công!")
+            
+            # Save information to DataFrame
+            new_data = {
+                'id': citizen_info[0],
+                'cccd': citizen_info[1],
+                'name': citizen_info[2],
+                'dob': citizen_info[3],
+                'sex': citizen_info[4],
+                'address': citizen_info[5],
+                'expdate': citizen_info[6],
+                'scan_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'image_path': "camera_capture"
+            }
+            
+            st.session_state.citizens_data = pd.concat([
+                st.session_state.citizens_data,
+                pd.DataFrame([new_data])
+            ], ignore_index=True)
+            
+            # Display citizen information
+            display_citizen_info(citizen_info)
+            
+    except Exception as e:
+        st.error(f"Lỗi xử lý QR code: {str(e)}")
 
+def display_citizen_info(citizen_info):
+    """Display citizen information in a formatted way"""
+    st.markdown("""
+    <div style="background-color: #e8f5e9; padding: 20px; border-radius: 10px; margin-top: 20px;">
+    <h4 style="color: #2e7d32;">Thông tin công dân:</h4>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write(f"**ID:** {citizen_info[0]}")
+        st.write(f"**Số CCCD:** {citizen_info[1]}")
+        st.write(f"**Họ và tên:** {citizen_info[2]}")
+        st.write(f"**Ngày sinh:** {citizen_info[3]}")
+    
+    with col2:
+        st.write(f"**Giới tính:** {citizen_info[4]}")
+        st.write(f"**Địa chỉ:** {citizen_info[5]}")
+        st.write(f"**Ngày hết hạn:** {citizen_info[6]}")
+# Add this to the top of your main() function
+def reset_session_on_error():
+    """Reset session state if there are WebRTC errors"""
+    if 'webrtc_error_count' not in st.session_state:
+        st.session_state.webrtc_error_count = 0
+    
+    if st.session_state.webrtc_error_count > 3:
+        st.warning("Phát hiện nhiều lỗi WebRTC. Đang reset session...")
+        for key in list(st.session_state.keys()):
+            if 'webrtc' in key.lower():
+                del st.session_state[key]
+        st.session_state.webrtc_error_count = 0
+        st.rerun()
 def show_citizen_data():
     st.markdown("<h2 style='text-align: center;'>Dữ liệu Công dân</h2>", unsafe_allow_html=True)
     
