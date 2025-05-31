@@ -250,12 +250,29 @@ async def process_offer(offer, video_processor=None):
             pc.addTrack(transformed_track)
     
     # Thiết lập kết nối
-    offer = RTCSessionDescription(sdp=offer["sdp"], type=offer["type"])
-    await pc.setRemoteDescription(offer)
-    answer = await pc.createAnswer()
-    await pc.setLocalDescription(answer)
-    
-    return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}, pc_id
+    if offer and offer.get("sdp"):
+        offer_obj = RTCSessionDescription(sdp=offer["sdp"], type=offer["type"])
+        await pc.setRemoteDescription(offer_obj)
+        answer = await pc.createAnswer()
+        await pc.setLocalDescription(answer)
+        
+        # Lưu ID kết nối
+        st.session_state.peer_connection_id = pc_id
+        
+        return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}, pc_id
+    else:
+        # Nếu không có offer, tạo một local stream
+        local_video = VideoTransformTrack(MediaPlayer('default:none', format='bgr24').video, processor=video_processor)
+        pc.addTrack(local_video)
+        
+        # Tạo offer
+        offer = await pc.createOffer()
+        await pc.setLocalDescription(offer)
+        
+        # Lưu ID kết nối
+        st.session_state.peer_connection_id = pc_id
+        
+        return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}, pc_id
 
 async def close_peer_connection(pc_id):
     if pc_id in peer_connections:
@@ -297,41 +314,105 @@ def create_webrtc_component(key, video_processor=None):
     start_button = col1.button("Bắt đầu Camera", key=f"start_{key}")
     stop_button = col2.button("Dừng Camera", key=f"stop_{key}")
     
+    # Tạo JavaScript để truy cập camera
+    js_code = """
+    <script>
+    const getWebcamVideo = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            const videoTracks = stream.getVideoTracks();
+            const track = videoTracks[0];
+            
+            // Create peer connection
+            const pc = new RTCPeerConnection({
+                iceServers: [{urls: ['stun:stun.l.google.com:19302']}]
+            });
+            
+            // Add track to peer connection
+            pc.addTrack(track, stream);
+            
+            // Create offer
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            
+            // Send offer to server
+            const response = await fetch('/_stcore/stream', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    type: 'webrtc_offer',
+                    sdp: pc.localDescription.sdp,
+                    session_id: '%s'
+                }),
+            });
+            
+            const data = await response.json();
+            const answer = new RTCSessionDescription({
+                type: 'answer',
+                sdp: data.sdp
+            });
+            
+            await pc.setRemoteDescription(answer);
+            
+            return pc;
+        } catch (err) {
+            console.error('Error accessing webcam:', err);
+            return null;
+        }
+    };
+    
+    // Start webcam when button is clicked
+    const startButton = document.querySelector('button[data-testid="start_%s"]');
+    if (startButton) {
+        startButton.addEventListener('click', () => {
+            getWebcamVideo().then(pc => {
+                window.webrtcPc = pc;
+            });
+        });
+    }
+    
+    // Stop webcam when button is clicked
+    const stopButton = document.querySelector('button[data-testid="stop_%s"]');
+    if (stopButton) {
+        stopButton.addEventListener('click', () => {
+            if (window.webrtcPc) {
+                window.webrtcPc.close();
+                window.webrtcPc = null;
+            }
+        });
+    }
+    </script>
+    """ % (key, key, key)
+    
+    # Inject JavaScript
+    st.markdown(js_code, unsafe_allow_html=True)
+    
     # Xử lý khi nhấn nút bắt đầu
     if start_button:
         status_container.info("Đang kết nối camera...")
         
-        # Tạo offer SDP
-        offer = {
-            "sdp": "",
-            "type": "offer"
-        }
+        # Tạo placeholder cho video stream
+        video_container.image(np.zeros((480, 640, 3), dtype=np.uint8), channels="RGB", use_container_width=True)
         
-        # Xử lý offer bằng asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        answer, pc_id = loop.run_until_complete(process_offer(offer, video_processor))
-        
-        # Lưu ID kết nối
-        st.session_state.peer_connection_id = pc_id
+        # Lưu processor
         st.session_state.video_processor = video_processor
         
         # Hiển thị trạng thái
         status_container.success("Camera đang hoạt động")
         
-        # Hiển thị video (giả lập)
-        video_container.image(np.zeros((480, 640, 3), dtype=np.uint8), channels="RGB", use_container_width=True)
-        
     # Xử lý khi nhấn nút dừng
     if stop_button and st.session_state.peer_connection_id:
-        # Đóng kết nối
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(close_peer_connection(st.session_state.peer_connection_id))
-        
-        # Xóa ID kết nối
-        st.session_state.peer_connection_id = None
-        st.session_state.video_processor = None
+        # Đóng kết nối nếu có
+        if st.session_state.peer_connection_id:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(close_peer_connection(st.session_state.peer_connection_id))
+            
+            # Xóa ID kết nối
+            st.session_state.peer_connection_id = None
+            st.session_state.video_processor = None
         
         # Hiển thị trạng thái
         status_container.info("Camera đã dừng")
