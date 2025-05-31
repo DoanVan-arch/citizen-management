@@ -231,8 +231,9 @@ ICE_SERVERS = [
 
 # Hàm xử lý aiortc
 async def process_offer(offer, video_processor=None):
+    #offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
     pc_id = str(uuid.uuid4())
-    pc = RTCPeerConnection({"iceServers": ICE_SERVERS})
+    pc = RTCPeerConnection()
     peer_connections[pc_id] = pc
     
     relay = MediaRelay()
