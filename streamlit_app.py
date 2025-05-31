@@ -42,123 +42,6 @@ if AIORTC_AVAILABLE:
 # Lưu trữ các kết nối peer
 peer_connections = {}
 videoframes = {}
-class SafeRTCConfiguration:
-    """Safe RTC configuration with error handling"""
-    
-    def __init__(self):
-        self.ice_servers = []
-        self.connection_timeout = 30
-        self.gathering_timeout = 10
-        self.retry_attempts = 3
-    
-    def get_safe_rtc_config(self) -> RTCConfiguration:
-        """Get RTC configuration with error handling"""
-        
-        # Basic STUN servers (always working)
-        safe_ice_servers = [
-            {"urls": ["stun:stun.l.google.com:19302"]},
-            {"urls": ["stun:stun1.l.google.com:19302"]},
-        ]
-        
-        # Test additional servers
-        additional_servers = [
-            {"urls": ["stun:stun2.l.google.com:19302"]},
-            {"urls": ["stun:stun3.l.google.com:19302"]},
-            {"urls": ["stun:stun4.l.google.com:19302"]},
-        ]
-        
-        for server in additional_servers:
-            if self._test_stun_server(server["urls"][0]):
-                safe_ice_servers.append(server)
-        
-        # Add TURN servers if available
-        turn_servers = self._get_working_turn_servers()
-        if turn_servers:
-            safe_ice_servers.extend(turn_servers)
-        
-        return RTCConfiguration({
-            "iceServers": safe_ice_servers,
-            "iceConnectionTimeout": self.connection_timeout,
-            "iceGatheringTimeout": self.gathering_timeout,
-            "bundlePolicy": "balanced",
-            "rtcpMuxPolicy": "require"
-        })
-    
-    def _test_stun_server(self, stun_url: str, timeout: float = 2.0) -> bool:
-        """Test if STUN server is reachable"""
-        try:
-            # Parse STUN URL
-            if not stun_url.startswith("stun:"):
-                return False
-            
-            host_port = stun_url[5:]  # Remove "stun:"
-            if ":" in host_port:
-                host, port = host_port.split(":", 1)
-                port = int(port)
-            else:
-                host = host_port
-                port = 3478
-            
-            # Test connection
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.settimeout(timeout)
-            
-            try:
-                sock.connect((host, port))
-                return True
-            except:
-                return False
-            finally:
-                sock.close()
-                
-        except Exception as e:
-            logger.warning(f"STUN server test failed for {stun_url}: {e}")
-            return False
-    
-    def _get_working_turn_servers(self) -> List[Dict]:
-        """Get working TURN servers"""
-        turn_servers = []
-        
-        try:
-            # Try Twilio TURN if configured
-            if hasattr(st.secrets, 'webrtc') and 'twilio_account_sid' in st.secrets.webrtc:
-                twilio_servers = self._get_twilio_turn_safe()
-                if twilio_servers:
-                    turn_servers.extend(twilio_servers)
-            
-            # Try other TURN providers
-            # Add your TURN server configurations here
-            
-        except Exception as e:
-            logger.warning(f"TURN server setup failed: {e}")
-        
-        return turn_servers
-    
-    def _get_twilio_turn_safe(self) -> List[Dict]:
-        """Safely get Twilio TURN servers"""
-        try:
-            import requests
-            
-            account_sid = st.secrets.webrtc.twilio_account_sid
-            auth_token = st.secrets.webrtc.twilio_auth_token
-            
-            url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Tokens.json"
-            
-            response = requests.post(
-                url, 
-                auth=(account_sid, auth_token),
-                timeout=5  # Short timeout
-            )
-            
-            if response.status_code == 201:
-                token_data = response.json()
-                return token_data.get("ice_servers", [])
-            
-        except Exception as e:
-            logger.warning(f"Twilio TURN failed: {e}")
-        
-        return []
-
 class ObjectDetectionTransformer(VideoProcessorBase):
     def recv(self, frame):
        
@@ -167,68 +50,6 @@ class ObjectDetectionTransformer(VideoProcessorBase):
         # Thu00eam logic phu00e1t hiu1ec7n u0111u1ed1i tu01b0u1ee3ng u1edf u0111u00e2y
         # (Cu00f3 thu1ec3 su1eed du1ee5ng OpenCV, YOLO, hou1eb7c cu00e1c model khu00e1c)
         
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
-# Lớp VideoProcessor cho aiortc
-class VideoProcessor:
-    def __init__(self, callback=None):
-        self.callback = callback
-        self.qr_detected = False
-        self.qr_data = None
-        
-    def process(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        
-        # Nếu có callback, gọi nó để xử lý frame
-        if self.callback:
-            img = self.callback(img)
-            
-        return av.VideoFrame.from_ndarray(img, format="bgr24")
-
-# Lớp VideoStreamTrack tùy chỉnh
-class VideoTransformTrack(VideoStreamTrack):
-    def __init__(self, track, processor=None):
-        super().__init__()
-        self.track = track
-        self.processor = processor if processor else VideoProcessor()
-
-    async def recv(self):
-        frame = await self.track.recv()
-        if self.processor:
-            frame = self.processor.process(frame)
-        return frame
-
-# Lớp QRCodeProcessor
-class QRCodeProcessor(VideoProcessor):
-    def process(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        
-        # Xử lý QR code
-        try:
-            # Chuyển sang RGB để xử lý
-            frame_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            decoded_objects = decode(frame_rgb)
-            
-            for obj in decoded_objects:
-                # Vẽ khung xung quanh QR code
-                points = obj.polygon
-                if len(points) > 4:
-                    hull = cv2.convexHull(np.array([point for point in points], dtype=np.float32))
-                    cv2.polylines(img, [hull], True, (0, 255, 0), 2)
-                else:
-                    cv2.polylines(img, [np.array(points, dtype=np.int32)], True, (0, 255, 0), 2)
-                
-                # Giải mã QR
-                qr_data = obj.data.decode('utf-8')
-                self.qr_data = qr_data
-                self.qr_detected = True
-                
-                # Hiển thị thông tin
-                cv2.putText(img, "QR Code Detected!", (10, 30),
-                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                
-        except Exception as e:
-            print(f"Error processing QR code: {str(e)}")
-            
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 # CSS tùy chỉnh
@@ -355,199 +176,6 @@ USERS = {
 ICE_SERVERS = [
     {"urls": ["stun:stun.l.google.com:19302"]}
 ]
-
-# Hàm xử lý aiortc
-async def process_offer(offer, video_processor=None):
-    #offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
-    pc_id = str(uuid.uuid4())
-    pc = RTCPeerConnection()
-    peer_connections[pc_id] = pc
-    
-    relay = MediaRelay()
-    
-    @pc.on("track")
-    def on_track(track):
-        if track.kind == "video":
-            # Sử dụng video processor nếu có
-            if video_processor:
-                transformed_track = VideoTransformTrack(relay.subscribe(track), processor=video_processor)
-            else:
-                # Mặc định chỉ chuyển tiếp video
-                transformed_track = VideoTransformTrack(relay.subscribe(track))
-                
-            pc.addTrack(transformed_track)
-    
-    # Thiết lập kết nối
-    if offer and offer.get("sdp"):
-        offer = RTCSessionDescription(sdp=offer["sdp"], type=offer["type"])
-        await pc.setRemoteDescription(offer)
-        answer = await pc.createAnswer()
-        await pc.setLocalDescription(answer)
-        
-        # Lưu ID kết nối
-        st.session_state.peer_connection_id = pc_id
-        
-        return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}, pc_id
-    else:
-        # Nếu không có offer, tạo một local stream
-        local_video = VideoTransformTrack(MediaPlayer('default:none', format='bgr24').video, processor=video_processor)
-        pc.addTrack(local_video)
-        
-        # Tạo offer
-        offer = await pc.createOffer()
-        await pc.setLocalDescription(offer)
-        
-        # Lưu ID kết nối
-        st.session_state.peer_connection_id = pc_id
-        
-        return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}, pc_id
-
-async def close_peer_connection(pc_id):
-    if pc_id in peer_connections:
-        pc = peer_connections[pc_id]
-        await pc.close()
-        del peer_connections[pc_id]
-
-def setup_asyncio():
-    """Setup asyncio event loop for WebRTC"""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            asyncio.set_event_loop(asyncio.new_event_loop())
-    except RuntimeError:
-        asyncio.set_event_loop(asyncio.new_event_loop())
-
-@contextmanager
-def aiortc_context():
-    """Context manager for aiortc operations"""
-    try:
-        setup_asyncio()
-        yield
-    except Exception as e:
-        st.error(f"aiortc Error: {str(e)}")
-        st.info("Please try refreshing the page or use the image upload feature instead.")
-
-def create_webrtc_component(key, video_processor=None):
-    """Create a WebRTC component using aiortc"""
-    if not AIORTC_AVAILABLE:
-        st.error("aiortc không khả dụng. Vui lòng sử dụng chức năng upload ảnh.")
-        return None
-    
-    # Tạo container cho video
-    video_container = st.empty()
-    status_container = st.empty()
-    
-    # Tạo các nút điều khiển
-    col1, col2 = st.columns(2)
-    start_button = col1.button("Bắt đầu Camera", key=f"start_{key}")
-    stop_button = col2.button("Dừng Camera", key=f"stop_{key}")
-    
-    # Tạo JavaScript để truy cập camera
-    js_code = """
-    <script>
-    const getWebcamVideo = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-            const videoTracks = stream.getVideoTracks();
-            const track = videoTracks[0];
-            
-            // Create peer connection
-            const pc = new RTCPeerConnection({
-                iceServers: [{urls: ['stun:stun.l.google.com:19302']}]
-            });
-            
-            // Add track to peer connection
-            pc.addTrack(track, stream);
-            
-            // Create offer
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            
-            // Send offer to server
-            const response = await fetch('/_stcore/stream', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    type: 'webrtc_offer',
-                    sdp: pc.localDescription.sdp,
-                    session_id: '%s'
-                }),
-            });
-            
-            const data = await response.json();
-            const answer = new RTCSessionDescription({
-                type: 'answer',
-                sdp: data.sdp
-            });
-            
-            await pc.setRemoteDescription(answer);
-            
-            return pc;
-        } catch (err) {
-            console.error('Error accessing webcam:', err);
-            return null;
-        }
-    };
-    
-    // Start webcam when button is clicked
-    const startButton = document.querySelector('button[data-testid="start_%s"]');
-    if (startButton) {
-        startButton.addEventListener('click', () => {
-            getWebcamVideo().then(pc => {
-                window.webrtcPc = pc;
-            });
-        });
-    }
-    
-    // Stop webcam when button is clicked
-    const stopButton = document.querySelector('button[data-testid="stop_%s"]');
-    if (stopButton) {
-        stopButton.addEventListener('click', () => {
-            if (window.webrtcPc) {
-                window.webrtcPc.close();
-                window.webrtcPc = null;
-            }
-        });
-    }
-    </script>
-    """ % (key, key, key)
-    
-    # Inject JavaScript
-    st.markdown(js_code, unsafe_allow_html=True)
-    
-    # Xử lý khi nhấn nút bắt đầu
-    if start_button:
-        status_container.info("Đang kết nối camera...")
-        
-        # Tạo placeholder cho video stream
-        video_container.image(np.zeros((480, 640, 3), dtype=np.uint8), channels="RGB", use_container_width=True)
-        
-        # Lưu processor
-        st.session_state.video_processor = video_processor
-        
-        # Hiển thị trạng thái
-        status_container.success("Camera đang hoạt động")
-        
-    # Xử lý khi nhấn nút dừng
-    if stop_button and st.session_state.peer_connection_id:
-        # Đóng kết nối nếu có
-        if st.session_state.peer_connection_id:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(close_peer_connection(st.session_state.peer_connection_id))
-            
-            # Xóa ID kết nối
-            st.session_state.peer_connection_id = None
-            st.session_state.video_processor = None
-        
-        # Hiển thị trạng thái
-        status_container.info("Camera đã dừng")
-        video_container.empty()
-    
-    return st.session_state.video_processor
-
 def login_page():
     st.markdown("<h1 style='text-align: center;'>Đăng nhập Hệ thống</h1>", unsafe_allow_html=True)
     
@@ -584,78 +212,7 @@ class FlipVideoProcessor(VideoProcessor):
         img = frame.to_ndarray(format="bgr24")
         flipped = img[::-1,:,:]
         return av.VideoFrame.from_ndarray(flipped, format="bgr24")
-rtc_configuration = RTCConfiguration({
-        "iceServers": [
-        {"urls": ["stun:stun.relay.metered.ca:80"]},  # STUN server miễn phí
-        {
-            "urls": [
-                "turn:global.relay.metered.ca:80",      # TURN server qua port 80
-                "turn:global.relay.metered.ca:443",     # TURN server qua port 443
-                "turns:global.relay.metered.ca:443?transport=tcp",
-                "turn:global.relay.metered.ca:80?transport=tcp"  # TURN qua TCP
-            ],
-            "username": "572fe221e61111ed9e7ad83e",
-            "credential": "iZIL4le+gfyxiauH"
-        }
-    ],
-        "iceTransportPolicy": "all",  # Use both STUN and TURN
-        "bundlePolicy": "max-bundle",
-        "rtcpMuxPolicy": "require",
-        "iceCandidatePoolSize": 20,  # Increase candidate pool
-        "iceConnectionTimeout": 45000,  # 45 seconds timeout
-        "iceGatheringTimeout": 20000,   # 20 seconds gathering
-        "continualGatheringPolicy": "gather_continually"  # Keep gathering
-        })
-def get_ice_connection_fix_config():
-    """Get RTC configuration specifically designed to fix ICE connection issues"""
-    
-    # Multiple STUN servers for redundancy
-    stun_servers = [
-        {"urls": ["stun:stun.l.google.com:19302"]},
-        {"urls": ["stun:stun1.l.google.com:19302"]},
-        {"urls": ["stun:stun2.l.google.com:19302"]},
-        {"urls": ["stun:stun.cloudflare.com:3478"]},
-        {"urls": ["stun:stun.services.mozilla.com:3478"]},
-    ]
-    
-    # Free TURN servers for NAT traversal
-    turn_servers = [
-        {
-            "urls": ["turn:openrelay.metered.ca:80"],
-            "username": "openrelayproject",
-            "credential": "openrelayproject"
-        },
-        {
-            "urls": ["turn:openrelay.metered.ca:443"],
-            "username": "openrelayproject", 
-            "credential": "openrelayproject"
-        },
-        {
-            "urls": ["turn:openrelay.metered.ca:443?transport=tcp"],
-            "username": "openrelayproject",
-            "credential": "openrelayproject"
-        }
-    ]
-    
-    # Twilio TURN servers (if configured)
-   
-    
-    all_ice_servers = stun_servers + turn_servers
-    
-    # Optimized RTC configuration for ICE connection issues
-    rtc_config = RTCConfiguration({
-        "iceServers": all_ice_servers,
-        "iceTransportPolicy": "all",  # Use both STUN and TURN
-        "bundlePolicy": "max-bundle",
-        "rtcpMuxPolicy": "require",
-        "iceCandidatePoolSize": 20,  # Increase candidate pool
-        "iceConnectionTimeout": 45000,  # 45 seconds timeout
-        "iceGatheringTimeout": 20000,   # 20 seconds gathering
-        "continualGatheringPolicy": "gather_continually"  # Keep gathering
-    })
-    
-    return rtc_config
-flip = st.checkbox("Flip")
+
 
 
 def video_frame_callback(frame):
@@ -699,7 +256,7 @@ def surveillance_camera():
                     # Sử dụng trong webrtc_streamer
                    
                     # Sử dụng aiortc
-                    processor = FlipVideoProcessor()
+                    
                     webrtc_ctx = webrtc_streamer(
                     key="camera-stream",
                     mode=WebRtcMode.SENDRECV,
@@ -843,12 +400,55 @@ def process_image_for_qr(image):
     except Exception as e:
         return False, f"Lỗi: {str(e)}"
 
+# Add this new class for QR code detection
+class QRCodeProcessor(VideoProcessorBase):
+    def __init__(self):
+        self.qr_detected = False
+        self.qr_data = None
+        self.last_detection_time = 0
+        
+    def recv(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        
+        # Convert to RGB for QR detection
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+        # Detect QR codes
+        decoded_objects = decode(img_rgb)
+        
+        current_time = datetime.now().timestamp()
+        
+        for obj in decoded_objects:
+            # Draw bounding box around QR code
+            points = obj.polygon
+            if len(points) > 4:
+                hull = cv2.convexHull(np.array([point for point in points], dtype=np.float32))
+                points = hull
+            
+            # Draw the bounding box
+            n = len(points)
+            for j in range(0, n):
+                cv2.line(img, tuple(points[j]), tuple(points[(j+1) % n]), (0, 255, 0), 3)
+            
+            # Add text overlay
+            cv2.putText(img, "QR Code Detected", (10, 30), 
+                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            
+            # Store QR data (with rate limiting to avoid spam)
+            if current_time - self.last_detection_time > 2:  # 2 second cooldown
+                self.qr_data = obj.data.decode('utf-8')
+                self.qr_detected = True
+                self.last_detection_time = current_time
+        
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
+
+# Update the scan_qr_code function
 def scan_qr_code():
-    """Enhanced QR code scanning with better error handling"""
+    """Enhanced QR code scanning with WebRTC support"""
     st.markdown("<h2 style='text-align: center;'>Quét mã QR CCCD</h2>", unsafe_allow_html=True)
     
     # Create tabs for different input methods
-    tab1, tab2 = st.tabs(["📁 Upload Ảnh", "📷 Camera"])
+    tab1, tab2 = st.tabs(["📁 Upload Ảnh", "📷 Camera WebRTC"])
     
     with tab1:
         st.markdown("""
@@ -879,30 +479,131 @@ def scan_qr_code():
     with tab2:
         st.markdown("""
         <div class="info-card">
-        <h3>Quét qua Camera</h3>
-        <p>Sử dụng camera để quét QR code trực tiếp</p>
+        <h3>Quét QR Code qua Camera</h3>
+        <p>Sử dụng WebRTC để quét QR code trực tiếp từ camera</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Use Streamlit's native camera input
-        camera_image = st.camera_input("Quét mã QR", key="qr_camera")
+        # Initialize QR processor in session state
+        if 'qr_processor' not in st.session_state:
+            st.session_state.qr_processor = QRCodeProcessor()
         
-        if camera_image is not None:
-            # Process the captured image
-            image = Image.open(camera_image)
-            image_array = np.array(image)
-            
-            # Display the image
-            st.image(image_array, caption="Ảnh đã chụp", use_container_width=True)
-            
-            # Process for QR code
-            if st.button("Xử lý QR Code", key="process_camera_qr"):
-                with st.spinner("Đang xử lý..."):
-                    success, message = process_image_for_qr(image)
-                    if success:
-                        st.success(message)
+        # WebRTC configuration for QR scanning
+        try:
+            if AIORTC_AVAILABLE:
+                # Get ICE servers
+                response = requests.get(
+                    "https://iewcom.metered.live/api/v1/turn/credentials",
+                    params={"apiKey": "5b0cc93867e02c9b2e8ef46de385169008aa"}
+                )
+                ice_servers = response.json()
+                
+                # Create WebRTC streamer for QR scanning
+                webrtc_ctx = webrtc_streamer(
+                    key="qr-scanner",
+                    mode=WebRtcMode.SENDRECV,
+                    rtc_configuration={"iceServers": ice_servers},
+                    video_processor_factory=lambda: st.session_state.qr_processor,
+                    media_stream_constraints={
+                        "video": {
+                            "width": {"min": 480, "ideal": 640, "max": 1280},
+                            "height": {"min": 360, "ideal": 480, "max": 720},
+                            "frameRate": {"min": 15, "ideal": 20, "max": 30}
+                        },
+                        "audio": False
+                    },
+                    async_processing=False,
+                    sendback_audio=False,
+                )
+                
+                # Display instructions
+                st.markdown("""
+                <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                <h4>📋 Hướng dẫn sử dụng:</h4>
+                <ul>
+                    <li>Nhấn "START" để bắt đầu camera</li>
+                    <li>Đưa QR code vào khung hình</li>
+                    <li>Hệ thống sẽ tự động phát hiện và xử lý QR code</li>
+                    <li>QR code được phát hiện sẽ có khung màu xanh</li>
+                </ul>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Check for QR detection
+                if webrtc_ctx.video_processor:
+                    processor = webrtc_ctx.video_processor
+                    
+                    # Display connection status
+                    if webrtc_ctx.state.playing:
+                        st.success("✅ Camera đang hoạt động - Sẵn sàng quét QR code")
+                        
+                        # Check if QR code was detected
+                        if hasattr(processor, 'qr_detected') and processor.qr_detected:
+                            st.balloons()
+                            st.success("🎉 QR Code đã được phát hiện!")
+                            
+                            # Process the detected QR code
+                            if hasattr(processor, 'qr_data') and processor.qr_data:
+                                success, message = process_qr_detection(processor.qr_data)
+                                if success:
+                                    st.success(f"✅ {message}")
+                                    # Display the processed citizen info
+                                    display_latest_citizen_info()
+                                else:
+                                    st.error(f"❌ {message}")
+                                
+                                # Reset detection flag
+                                processor.qr_detected = False
+                                processor.qr_data = None
                     else:
-                        st.error("Không tìm thấy mã QR trong ảnh. Vui lòng thử lại.")
+                        st.info("📷 Nhấn 'START' để bắt đầu quét QR code")
+                
+            else:
+                st.error("❌ WebRTC không khả dụng. Vui lòng sử dụng tab 'Upload Ảnh'")
+                
+        except Exception as e:
+            st.error(f"❌ Lỗi khởi tạo camera: {str(e)}")
+            st.info("💡 Thử làm mới trang hoặc sử dụng tab 'Upload Ảnh'")
+            
+            # Fallback to simple camera input
+            st.markdown("---")
+            st.markdown("### 📷 Camera đơn giản (Fallback)")
+            camera_image = st.camera_input("Chụp ảnh QR Code", key="qr_camera_fallback")
+            
+            if camera_image is not None:
+                image = Image.open(camera_image)
+                st.image(image, caption="Ảnh đã chụp", use_container_width=True)
+                
+                if st.button("Xử lý QR Code", key="process_camera_qr_fallback"):
+                    with st.spinner("Đang xử lý..."):
+                        success, message = process_image_for_qr(image)
+                        if success:
+                            st.success(message)
+                        else:
+                            st.error("Không tìm thấy mã QR trong ảnh. Vui lòng thử lại.")
+def display_latest_citizen_info():
+    """Display information of the most recently added citizen"""
+    if not st.session_state.citizens_data.empty:
+        latest_citizen = st.session_state.citizens_data.iloc[-1]
+        
+        st.markdown("""
+        <div style="background-color: #e8f5e9; padding: 20px; border-radius: 10px; margin-top: 20px;">
+        <h4 style="color: #2e7d32;">📋 Thông tin công dân vừa quét:</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write(f"**ID:** {latest_citizen['id']}")
+            st.write(f"**Số CCCD:** {latest_citizen['cccd']}")
+            st.write(f"**Họ và tên:** {latest_citizen['name']}")
+            st.write(f"**Ngày sinh:** {latest_citizen['dob']}")
+        
+        with col2:
+            st.write(f"**Giới tính:** {latest_citizen['sex']}")
+            st.write(f"**Địa chỉ:** {latest_citizen['address']}")
+            st.write(f"**Ngày hết hạn:** {latest_citizen['expdate']}")
+            st.write(f"**Thời gian quét:** {latest_citizen['scan_date']}")
 
 def process_qr_detection(qr_data):
     """Process detected QR code data"""
