@@ -260,7 +260,7 @@ def surveillance_camera():
                 # Enhanced WebRTC streamer with better error handling
                 webrtc_ctx = safe_webrtc_streamer(
                     key="surveillance",
-                    video_processor_factory=ObjectDetectionTransformer,
+                   # video_processor_factory=ObjectDetectionTransformer,
                     rtc_configuration=RTC_CONFIGURATION,
                     media_stream_constraints={
                         "video": {"width": 320, "height": 240, "frameRate": 15},
@@ -492,7 +492,7 @@ def scan_qr_code():
             try:
                 webrtc_ctx = safe_webrtc_streamer(
                     key="qr-scanner",
-                    video_processor_factory=QRCodeVideoTransformer,
+                   # video_processor_factory=QRCodeVideoTransformer,
                     rtc_configuration=RTC_CONFIGURATION,
                     media_stream_constraints={
                         "video": {"width": 640, "height": 480, "frameRate": 15},
