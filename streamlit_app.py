@@ -263,10 +263,10 @@ def surveillance_camera():
                    # video_processor_factory=ObjectDetectionTransformer,
                     rtc_configuration=RTC_CONFIGURATION,
                     media_stream_constraints={
-                        "video": {"width": 320, "height": 240, "frameRate": 15},
+                        "video": {"width": 80, "height": 60, "frameRate": 15},
                         "audio": False
                     },
-                    async_processing=False,
+                    async_processing=True,
                 )
                 
                 # Display connection status
