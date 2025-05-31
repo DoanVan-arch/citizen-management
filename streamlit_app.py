@@ -173,9 +173,8 @@ USERS = {
 }
 
 # ICE servers configuration for aiortc
-ICE_SERVERS = [
-    {"urls": ["stun:stun.l.google.com:19302"]}
-]
+
+
 def login_page():
     st.markdown("<h1 style='text-align: center;'>Đăng nhập Hệ thống</h1>", unsafe_allow_html=True)
     
@@ -201,26 +200,7 @@ def login_page():
             else:
                 st.error("Tên đăng nhập hoặc mật khẩu không đúng!")
 
-def video_frame_callback(frame):
-    img = frame.to_ndarray(format="bgr24")
-    flipped = img[::-1,:,:]
-    return av.VideoFrame.from_ndarray(flipped, format="bgr24")
 
-# Create a processor for flipping video
-class FlipVideoProcessor(VideoProcessor):
-    def process(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        flipped = img[::-1,:,:]
-        return av.VideoFrame.from_ndarray(flipped, format="bgr24")
-
-
-
-def video_frame_callback(frame):
-    img = frame.to_ndarray(format="bgr24")
-
-    flipped = img[::-1,:,:] if flip else img
-
-    return av.VideoFrame.from_ndarray(flipped, format="bgr24")
 
     return frame
 import requests
@@ -264,12 +244,12 @@ def surveillance_camera():
                     video_processor_factory=ObjectDetectionTransformer,
                     video_frame_callback=video_frame_callback,
                    media_stream_constraints = {
-    "video": {
-        "width": {"min": 1280, "ideal": 1920, "max": 3840},
-        "height": {"min": 720, "ideal": 1080, "max": 2160},
-        "frameRate": {"min": 15, "ideal": 30, "max": 60}
-    },
-    "audio": false
+                    "video": {
+                        "width": {"min": 1280, "ideal": 1920, "max": 3840},
+                        "height": {"min": 720, "ideal": 1080, "max": 2160},
+                        "frameRate": {"min": 15, "ideal": 30, "max": 60}
+                    },
+                    "audio": false
 },
 
                     async_processing=False,
@@ -504,7 +484,7 @@ def scan_qr_code():
                     key="qr-scanner",
                     mode=WebRtcMode.SENDRECV,
                     rtc_configuration={"iceServers": ice_servers},
-                    video_processor_factory=lambda: st.session_state.qr_processor,
+                    video_processor_factory=QRCodeProcessor,
                     media_stream_constraints = {
     "video": {
         "width": {"min": 1280, "ideal": 1920, "max": 3840},
@@ -512,7 +492,7 @@ def scan_qr_code():
         "frameRate": {"min": 15, "ideal": 30, "max": 60}
     },
     "audio": false
-}
+},
 
                     async_processing=False,
                     sendback_audio=False,
