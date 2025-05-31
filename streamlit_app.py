@@ -242,7 +242,7 @@ def surveillance_camera():
                     mode=WebRtcMode.SENDRECV,
                     rtc_configuration={"iceServers": ice_servers},
                     video_processor_factory=ObjectDetectionTransformer,
-                    video_frame_callback=video_frame_callback,
+                    
                    media_stream_constraints = {
                     "video": {
                         "width": {"min": 1280, "ideal": 1920, "max": 3840},
