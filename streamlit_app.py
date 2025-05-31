@@ -10,6 +10,7 @@ from PIL import Image
 import av
 from contextlib import contextmanager
 import tempfile
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
 # Thêm try-except cho import asyncio để xử lý lỗi liên quan đến asyncio
 try:
@@ -41,7 +42,15 @@ if AIORTC_AVAILABLE:
 # Lưu trữ các kết nối peer
 peer_connections = {}
 videoframes = {}
-
+class ObjectDetectionTransformer(VideoProcessorBase):
+    def recv(self, frame):
+       
+        img = frame.to_ndarray(format="bgr24")
+        
+        # Thu00eam logic phu00e1t hiu1ec7n u0111u1ed1i tu01b0u1ee3ng u1edf u0111u00e2y
+        # (Cu00f3 thu1ec3 su1eed du1ee5ng OpenCV, YOLO, hou1eb7c cu00e1c model khu00e1c)
+        
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 # Lớp VideoProcessor cho aiortc
 class VideoProcessor:
     def __init__(self, callback=None):
@@ -488,7 +497,7 @@ def surveillance_camera():
                     key="camera-stream",
                     mode=WebRtcMode.SENDRECV,
                     #rtc_configuration=rtc_configuration,
-                    video_processor_factory=lambda: video_processor,
+                    video_processor_factory=lambda: ObjectDetectionTransformer,
                     media_stream_constraints={
                         "video": True,
                         "audio": False
