@@ -9,3 +9,7 @@ libswscale-dev
 libavutil-dev
 libopus-dev
 libvpx-dev
+libzbar0
+libzbar-dev
+python3-zbar
+zbar-tools
