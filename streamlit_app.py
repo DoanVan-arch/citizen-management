@@ -9,6 +9,7 @@ import os
 from PIL import Image
 import av
 from contextlib import contextmanager
+import tempfile
 
 # Thêm try-except cho import asyncio để xử lý lỗi liên quan đến asyncio
 try:
@@ -235,14 +236,7 @@ async def process_offer(offer, video_processor=None):
     pc_id = str(uuid.uuid4())
     pc = RTCPeerConnection()
     peer_connections[pc_id] = pc
-    await pc.setRemoteDescription(offer_obj)
-    answer = await pc.createAnswer()
-    await pc.setLocalDescription(answer)
     
-    # Lưu ID kết nối
-    st.session_state.peer_connection_id = pc_id
-    
-   # return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}, pc_id
     relay = MediaRelay()
     
     @pc.on("track")
@@ -259,8 +253,8 @@ async def process_offer(offer, video_processor=None):
     
     # Thiết lập kết nối
     if offer and offer.get("sdp"):
-        offer_obj = RTCSessionDescription(sdp=offer["sdp"], type=offer["type"])
-        await pc.setRemoteDescription(offer_obj)
+        offer = RTCSessionDescription(sdp=offer["sdp"], type=offer["type"])
+        await pc.setRemoteDescription(offer)
         answer = await pc.createAnswer()
         await pc.setLocalDescription(answer)
         
@@ -281,7 +275,6 @@ async def process_offer(offer, video_processor=None):
         st.session_state.peer_connection_id = pc_id
         
         return {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type}, pc_id
-    
 
 async def close_peer_connection(pc_id):
     if pc_id in peer_connections:
@@ -659,34 +652,25 @@ def scan_qr_code():
         </div>
         """, unsafe_allow_html=True)
         
-        # Add option to choose scanning method
-        scan_method = st.radio(
-            "Chọn phương thức quét:",
-            ["Camera aiortc", "Chụp ảnh từ camera"],
-            key="scan_method"
-        )
+        # Use Streamlit's native camera input
+        camera_image = st.camera_input("Quét mã QR", key="qr_camera")
         
-        if scan_method == "Camera aiortc":
-            try:
-                if AIORTC_AVAILABLE:
-                    # Sử dụng aiortc với QR processor
-                    qr_processor = QRCodeProcessor()
-                    video_processor = create_webrtc_component("qr-scanner", qr_processor)
-                    
-                    # Process QR detection results
-                    if st.session_state.video_processor and hasattr(st.session_state.video_processor, 'qr_detected') and st.session_state.video_processor.qr_detected:
-                        process_qr_detection(st.session_state.video_processor.qr_data)
-                else:
-                    st.error("aiortc không khả dụng. Vui lòng sử dụng tùy chọn upload ảnh.")
-                        
-            except Exception as e:
-                st.error(f"Lỗi camera: {str(e)}")
-                st.info("Vui lòng thử sử dụng tùy chọn 'Chụp ảnh từ camera' hoặc 'Upload Ảnh'")
-        
-        else:
-            # Alternative camera capture method
-            if st.button("Chụp ảnh từ camera", key="capture_camera"):
-                st.info("Chức năng này đang được phát triển. Vui lòng sử dụng tùy chọn upload ảnh.")
+        if camera_image is not None:
+            # Process the captured image
+            image = Image.open(camera_image)
+            image_array = np.array(image)
+            
+            # Display the image
+            st.image(image_array, caption="Ảnh đã chụp", use_container_width=True)
+            
+            # Process for QR code
+            if st.button("Xử lý QR Code", key="process_camera_qr"):
+                with st.spinner("Đang xử lý..."):
+                    success, message = process_image_for_qr(image)
+                    if success:
+                        st.success(message)
+                    else:
+                        st.error("Không tìm thấy mã QR trong ảnh. Vui lòng thử lại.")
 
 def process_qr_detection(qr_data):
     """Process detected QR code data"""
