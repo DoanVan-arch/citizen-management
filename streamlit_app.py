@@ -596,6 +596,55 @@ rtc_configuration = RTCConfiguration({
                 {"urls": ["stun:stun1.l.google.com:19302"]},
             ]
         })
+def get_ice_connection_fix_config():
+    """Get RTC configuration specifically designed to fix ICE connection issues"""
+    
+    # Multiple STUN servers for redundancy
+    stun_servers = [
+        {"urls": ["stun:stun.l.google.com:19302"]},
+        {"urls": ["stun:stun1.l.google.com:19302"]},
+        {"urls": ["stun:stun2.l.google.com:19302"]},
+        {"urls": ["stun:stun.cloudflare.com:3478"]},
+        {"urls": ["stun:stun.services.mozilla.com:3478"]},
+    ]
+    
+    # Free TURN servers for NAT traversal
+    turn_servers = [
+        {
+            "urls": ["turn:openrelay.metered.ca:80"],
+            "username": "openrelayproject",
+            "credential": "openrelayproject"
+        },
+        {
+            "urls": ["turn:openrelay.metered.ca:443"],
+            "username": "openrelayproject", 
+            "credential": "openrelayproject"
+        },
+        {
+            "urls": ["turn:openrelay.metered.ca:443?transport=tcp"],
+            "username": "openrelayproject",
+            "credential": "openrelayproject"
+        }
+    ]
+    
+    # Twilio TURN servers (if configured)
+   
+    
+    all_ice_servers = stun_servers + turn_servers
+    
+    # Optimized RTC configuration for ICE connection issues
+    rtc_config = RTCConfiguration({
+        "iceServers": all_ice_servers,
+        "iceTransportPolicy": "all",  # Use both STUN and TURN
+        "bundlePolicy": "max-bundle",
+        "rtcpMuxPolicy": "require",
+        "iceCandidatePoolSize": 20,  # Increase candidate pool
+        "iceConnectionTimeout": 45000,  # 45 seconds timeout
+        "iceGatheringTimeout": 20000,   # 20 seconds gathering
+        "continualGatheringPolicy": "gather_continually"  # Keep gathering
+    })
+    
+    return rtc_config
 def surveillance_camera():
     st.markdown("<h2 style='text-align: center;'>Giám sát Camera</h2>", unsafe_allow_html=True)
     
@@ -626,7 +675,7 @@ def surveillance_camera():
                     webrtc_ctx = webrtc_streamer(
                     key="camera-stream",
                     mode=WebRtcMode.SENDRECV,
-                    rtc_configuration=rtc_configuration,
+                    rtc_configuration=get_ice_connection_fix_config(),
                     video_processor_factory=ObjectDetectionTransformer,
                     media_stream_constraints={
                         "video": {
