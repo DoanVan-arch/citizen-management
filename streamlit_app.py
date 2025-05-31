@@ -205,8 +205,8 @@ def safe_webrtc_streamer(**kwargs):
 if WEBRTC_AVAILABLE:
     RTC_CONFIGURATION = RTCConfiguration({
         "iceServers": [
-            {"urls": ["stun:stun.l.google.com:19302"]},
-            {"urls": ["stun:stun1.l.google.com:19302"]},
+            {"urls": ["stun:stun.l.google.com:19302"]}
+           
         ],
         "iceTransportPolicy": "all",
         "bundlePolicy": "balanced"
@@ -267,7 +267,7 @@ def surveillance_camera():
                     video_processor_factory=ObjectDetectionTransformer,
                     rtc_configuration=RTC_CONFIGURATION,
                     media_stream_constraints={
-                        "video": {"width": 640, "height": 480, "frameRate": 15},
+                        "video": {"width": 320, "height": 240, "frameRate": 15},
                         "audio": False
                     },
                     async_processing=False,
