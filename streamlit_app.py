@@ -549,7 +549,41 @@ def main():
         "Cài đặt"
     ]
     
-    choice = st.sidebar.selectbox("Chọn chức năng", menu)
+    choice = st.sidebar.selectbox(
+        "Chọn chức năng", 
+        menu, 
+        index=menu.index(st.session_state.menu_choice),
+        key="main_menu"
+    )
+    
+    # Hiu1ec3n thu1ecb cu00e1c nu00fat chu1ee9c nu0103ng phu1ee5 trong sidebar
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### Chức năng nhanh")
+    
+    if st.sidebar.button("📷 Camera"):
+        st.session_state.page = "camera"
+        st.session_state.menu_choice = "Camera Giám sát"
+       # surveillance_camera()
+       # choice.set = "Camera Giám sát"
+     #   st.experimental_rerun()
+      
+    if st.sidebar.button("📊 Báo cáo"):
+        st.session_state.page = "reports"
+       # show_statistics()
+        st.session_state.menu_choice  = "Thống kê"
+       # st.experimental_rerun()
+        
+    if st.sidebar.button("⚙️ Cài đặt"):
+        st.session_state.page = "settings"
+        #show_settings()
+        st.session_state.menu_choice = "Cài đặt"
+       # st.experimental_rerun()
+    
+    # Nu00fat u0111u0103ng xuu1ea5t
+    if st.sidebar.button("🚪 Đăng xuất"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.experimental_rerun()
     if choice == "Trang chủ":
         show_homepage()
     elif choice == "Quét QR CCCD":
@@ -562,34 +596,6 @@ def main():
         show_statistics()
     elif choice == "Cài đặt":
         show_settings()
-    # Hiu1ec3n thu1ecb cu00e1c nu00fat chu1ee9c nu0103ng phu1ee5 trong sidebar
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### Chức năng nhanh")
-    
-    if st.sidebar.button("📷 Camera"):
-        st.session_state.page = "camera"
-        surveillance_camera()
-       # choice.set = "Camera Giám sát"
-        st.experimental_rerun()
-      
-    if st.sidebar.button("📊 Báo cáo"):
-        st.session_state.page = "reports"
-        show_statistics()
-        choice = "Thống kê"
-        st.experimental_rerun()
-        
-    if st.sidebar.button("⚙️ Cài đặt"):
-        st.session_state.page = "settings"
-        show_settings()
-        choice = "Cài đặt"
-        st.experimental_rerun()
-    
-    # Nu00fat u0111u0103ng xuu1ea5t
-    if st.sidebar.button("🚪 Đăng xuất"):
-        st.session_state.logged_in = False
-        st.session_state.username = ""
-        st.experimental_rerun()
-    
     # Xu1eed lu00fd cu00e1c trang
     
 
