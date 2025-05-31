@@ -202,7 +202,7 @@ def login_page():
 
 
 
-    return frame
+ 
 import requests
 def surveillance_camera():
     st.markdown("<h2 style='text-align: center;'>Giám sát Camera</h2>", unsafe_allow_html=True)
