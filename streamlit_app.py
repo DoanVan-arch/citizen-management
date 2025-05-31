@@ -6,7 +6,7 @@ import pandas as pd
 from datetime import datetime
 import os
 from PIL import Image
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
+#from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration 
 import av
 # d:\Codes\citizen-management\streamlit_app.py
 
@@ -143,7 +143,18 @@ USERS = {
     "admin": "admin123",
     "user": "user123"
 }
-
+def safe_webrtc_streamer(**kwargs):
+    """Wrapper an toàn cho webrtc_streamer với error handling"""
+    try:
+        if not WEBRTC_AVAILABLE:
+            st.error("WebRTC không khả dụng. Vui lòng sử dụng chức năng upload ảnh.")
+            return None
+            
+        return webrtc_streamer(**kwargs)
+    except Exception as e:
+        st.error(f"Lỗi WebRTC: {str(e)}")
+        st.info("Hãy thử sử dụng chức năng upload ảnh thay thế.")
+        return None
 def login_page():
     st.markdown("<h1 style='text-align: center;'>Đăng nhập Hệ thống</h1>", unsafe_allow_html=True)
     
@@ -184,16 +195,11 @@ def surveillance_camera():
         # d:\Codes\citizen-management\streamlit_app.py
 
 # Thay thế cấu hình RTC hiện tại
-        RTC_CONFIGURATION = RTCConfiguration({
-            "iceServers": [
-                {"urls": ["stun:stun.l.google.com:19302"]}
-                
-            ]
-        })
+      
         
         # Camera stream với cấu hình thấp hơn
         try:
-            webrtc_ctx = webrtc_streamer(
+            webrtc_ctx = safe_webrtc_streamer(
                 key="surveillance",
                 video_processor_factory=ObjectDetectionTransformer,
                 rtc_configuration=RTC_CONFIGURATION,
@@ -245,7 +251,8 @@ def surveillance_camera():
 
 # Thu00eam class cho object detection
 class ObjectDetectionTransformer(VideoTransformerBase):
-    def transform(self, frame):
+    def recv(self, frame):
+       
         img = frame.to_ndarray(format="bgr24")
         
         # Thu00eam logic phu00e1t hiu1ec7n u0111u1ed1i tu01b0u1ee3ng u1edf u0111u00e2y
@@ -419,11 +426,12 @@ def scan_qr_code():
         """, unsafe_allow_html=True)
 
         # Khu1edfi tu1ea1o WebRTC streamer
-        webrtc_ctx = webrtc_streamer(
+        webrtc_ctx = safe_webrtc_streamer(
             key="qr-scanner",
             video_processor_factory=QRCodeVideoTransformer,
             rtc_configuration=RTC_CONFIGURATION,
             media_stream_constraints={"video": True, "audio": False},
+            async_processing=True,
         )
 
        # Trong hu00e0m transform cu1ee7a class QRCodeVideoTransformer, su1eeda phu1ea7n xu1eed lu00fd khi phu00e1t hiu1ec7n QR:
