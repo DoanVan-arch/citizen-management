@@ -490,12 +490,8 @@ def surveillance_camera():
                     #rtc_configuration=rtc_configuration,
                     video_processor_factory=lambda: video_processor,
                     media_stream_constraints={
-                        "video": {
-                            "width": {"min": 640, "ideal": int(resolution.split('x')[0])},
-                            "height": {"min": 480, "ideal": int(resolution.split('x')[1])},
-                            "frameRate": {"min": 10, "ideal": fps, "max": 60}
-                        },
-                        "audio": enable_audio
+                        "video": True,
+                        "audio": False
                     },
                     async_processing=True,
                     sendback_audio=enable_audio,
