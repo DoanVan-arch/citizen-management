@@ -666,6 +666,7 @@ def video_frame_callback(frame):
     return av.VideoFrame.from_ndarray(flipped, format="bgr24")
 
     return frame
+import requests
 def surveillance_camera():
     st.markdown("<h2 style='text-align: center;'>Giám sát Camera</h2>", unsafe_allow_html=True)
     
@@ -689,13 +690,20 @@ def surveillance_camera():
         if camera_option == "Camera trực tiếp (aiortc)":
             try:
                 if AIORTC_AVAILABLE:
-                    
+                    response = requests.get(
+                        "https://yourappname.metered.live/api/v1/turn/credentials",
+                        params={"apiKey": "5b0cc93867e02c9b2e8ef46de385169008aa"}
+                    )
+                    ice_servers = response.json()
+
+                    # Sử dụng trong webrtc_streamer
+                   
                     # Sử dụng aiortc
                     processor = FlipVideoProcessor()
                     webrtc_ctx = webrtc_streamer(
                     key="camera-stream",
                     mode=WebRtcMode.SENDRECV,
-                    rtc_configuration=rtc_configuration,
+                    rtc_configuration={"iceServers": ice_servers},
                     video_processor_factory=ObjectDetectionTransformer,
                     video_frame_callback=video_frame_callback,
                     media_stream_constraints={
