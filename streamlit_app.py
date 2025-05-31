@@ -173,8 +173,8 @@ def surveillance_camera():
 # Thay thế cấu hình RTC hiện tại
         RTC_CONFIGURATION = RTCConfiguration({
             "iceServers": [
-                {"urls": ["stun:stun.l.google.com:19302"]},
-                {"urls": ["stun:stun1.l.google.com:19302"]}
+                {"urls": ["stun:stun.l.google.com:19302"]}
+                
             ]
         })
         
@@ -185,11 +185,7 @@ def surveillance_camera():
                 video_transformer_factory=ObjectDetectionTransformer,
                 rtc_configuration=RTC_CONFIGURATION,
                 media_stream_constraints={
-                    "video": {
-                        "width": {"min": 320, "ideal": 640, "max": 1280},
-                        "height": {"min": 240, "ideal": 480, "max": 720},
-                        "frameRate": {"min": 10, "ideal": 15, "max": 30}
-                    }, 
+                    "video":True, 
                     "audio": False
                 },
                 async_processing=False,  # Tắt xử lý bất đồng bộ để đơn giản hóa
