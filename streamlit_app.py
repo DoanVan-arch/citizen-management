@@ -585,31 +585,19 @@ class FlipVideoProcessor(VideoProcessor):
         flipped = img[::-1,:,:]
         return av.VideoFrame.from_ndarray(flipped, format="bgr24")
 rtc_configuration = RTCConfiguration({
-            "iceServers": [
-      {
-        urls: "stun:stun.relay.metered.ca:80",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:80",
-        username: "572fe221e61111ed9e7ad83e",
-        credential: "iZIL4le+gfyxiauH",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:80?transport=tcp",
-        username: "572fe221e61111ed9e7ad83e",
-        credential: "iZIL4le+gfyxiauH",
-      },
-      {
-        urls: "turn:global.relay.metered.ca:443",
-        username: "572fe221e61111ed9e7ad83e",
-        credential: "iZIL4le+gfyxiauH",
-      },
-      {
-        urls: "turns:global.relay.metered.ca:443?transport=tcp",
-        username: "572fe221e61111ed9e7ad83e",
-        credential: "iZIL4le+gfyxiauH",
-      },
-  ],
+        "iceServers": [
+        {"urls": ["stun:stun.relay.metered.ca:80"]},  # STUN server miễn phí
+        {
+            "urls": [
+                "turn:global.relay.metered.ca:80",      # TURN server qua port 80
+                "turn:global.relay.metered.ca:443",     # TURN server qua port 443
+                "turns:global.relay.metered.ca:443?transport=tcp",
+                "turn:global.relay.metered.ca:80?transport=tcp"  # TURN qua TCP
+            ],
+            "username": "572fe221e61111ed9e7ad83e",
+            "credential": "iZIL4le+gfyxiauH"
+        }
+    ],
         "iceTransportPolicy": "all",  # Use both STUN and TURN
         "bundlePolicy": "max-bundle",
         "rtcpMuxPolicy": "require",
