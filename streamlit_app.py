@@ -537,7 +537,7 @@ def main():
     # Hiu1ec3n thu1ecb thu00f4ng tin ngu01b0u1eddi du00f9ng u0111u0103ng nhu1eadp
     st.sidebar.markdown(f"""<div style='text-align: center; padding: 10px; background-color: #e8f5e9; 
                         border-radius: 5px; margin-bottom: 20px;'>
-                        ud83dudc64 <b>{st.session_state.username}</b></div>""", 
+                         <b>{st.session_state.username}</b></div>""", 
                         unsafe_allow_html=True)
     
     menu = [
