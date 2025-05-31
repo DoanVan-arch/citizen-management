@@ -242,7 +242,7 @@ def surveillance_camera():
                     mode=WebRtcMode.SENDRECV,
                     rtc_configuration={"iceServers": ice_servers},
                     video_processor_factory=ObjectDetectionTransformer,
-                    
+                    video_frame_callback=video_frame_callback,
                    media_stream_constraints = {
                     "video": {
                         "width": {"min": 1280, "ideal": 1920, "max": 3840},
@@ -466,7 +466,8 @@ def scan_qr_code():
         """, unsafe_allow_html=True)
         
         # Initialize QR processor in session state
-        
+        if 'qr_processor' not in st.session_state:
+            st.session_state.qr_processor = QRCodeProcessor()
         
         # WebRTC configuration for QR scanning
         try:
@@ -510,30 +511,32 @@ def scan_qr_code():
                 </div>
                 """, unsafe_allow_html=True)
                 
-            
+                # Check for QR detection
+                if webrtc_ctx.video_processor:
+                    processor = webrtc_ctx.video_processor
                     
-                # Display connection status
-                if webrtc_ctx.state.playing:
-                    st.success("✅ Camera đang hoạt động - Sẵn sàng quét QR code")
-                    
-                    # Check if QR code was detected
-                    if hasattr(processor, 'qr_detected') and processor.qr_detected:
-                        st.balloons()
-                        st.success("🎉 QR Code đã được phát hiện!")
+                    # Display connection status
+                    if webrtc_ctx.state.playing:
+                        st.success("✅ Camera đang hoạt động - Sẵn sàng quét QR code")
                         
-                        # Process the detected QR code
-                        if hasattr(processor, 'qr_data') and processor.qr_data:
-                            success, message = process_qr_detection(processor.qr_data)
-                            if success:
-                                st.success(f"✅ {message}")
-                                # Display the processed citizen info
-                                display_latest_citizen_info()
-                            else:
-                                st.error(f"❌ {message}")
+                        # Check if QR code was detected
+                        if hasattr(processor, 'qr_detected') and processor.qr_detected:
+                            st.balloons()
+                            st.success("🎉 QR Code đã được phát hiện!")
                             
-                            # Reset detection flag
-                            processor.qr_detected = False
-                            processor.qr_data = None
+                            # Process the detected QR code
+                            if hasattr(processor, 'qr_data') and processor.qr_data:
+                                success, message = process_qr_detection(processor.qr_data)
+                                if success:
+                                    st.success(f"✅ {message}")
+                                    # Display the processed citizen info
+                                    display_latest_citizen_info()
+                                else:
+                                    st.error(f"❌ {message}")
+                                
+                                # Reset detection flag
+                                processor.qr_detected = False
+                                processor.qr_data = None
                     else:
                         st.info("📷 Nhấn 'START' để bắt đầu quét QR code")
                 
@@ -544,7 +547,22 @@ def scan_qr_code():
             st.error(f"❌ Lỗi khởi tạo camera: {str(e)}")
             st.info("💡 Thử làm mới trang hoặc sử dụng tab 'Upload Ảnh'")
             
-           
+            # Fallback to simple camera input
+            st.markdown("---")
+            st.markdown("### 📷 Camera đơn giản (Fallback)")
+            camera_image = st.camera_input("Chụp ảnh QR Code", key="qr_camera_fallback")
+            
+            if camera_image is not None:
+                image = Image.open(camera_image)
+                st.image(image, caption="Ảnh đã chụp", use_container_width=True)
+                
+                if st.button("Xử lý QR Code", key="process_camera_qr_fallback"):
+                    with st.spinner("Đang xử lý..."):
+                        success, message = process_image_for_qr(image)
+                        if success:
+                            st.success(message)
+                        else:
+                            st.error("Không tìm thấy mã QR trong ảnh. Vui lòng thử lại.")
 def display_latest_citizen_info():
     """Display information of the most recently added citizen"""
     if not st.session_state.citizens_data.empty:
