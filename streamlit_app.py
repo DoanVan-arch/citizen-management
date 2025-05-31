@@ -9,16 +9,16 @@ from PIL import Image
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
 import av
 
-# Thiết lập giao diện trang
+# Thiu1ebft lu1eadp giao diu1ec7n trang
 st.set_page_config(
-    page_title="Hệ thống Quản lý Công dân",
-    page_icon="🏛️",
+    page_title="HỆ THỐNG QUẢN LÝ CÔNG DÂN",
+    page_icon="ud83cudfdbufe0f",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# CSS tùy chỉnh
-# Cập nhật phần CSS
+# CSS tu00f9y chu1ec9nh
+# Cu1eadp nhu1eadt phu1ea7n CSS
 st.markdown("""
     <style>
     .main {
@@ -88,30 +88,84 @@ st.markdown("""
     .sidebar .sidebar-content {
         background-color: #f8f9fa;
     }
+    .login-form {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 30px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .login-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 
-# Khởi tạo session state
+# Khu1edfi tu1ea1o session state
 if 'citizens_data' not in st.session_state:
     st.session_state.citizens_data = pd.DataFrame(columns=[
         'id', 'cccd', 'name', 'dob', 'sex', 'address', 'expdate', 'scan_date', 'image_path'
     ])
 
+# Thu00eam session state cho u0111u0103ng nhu1eadp
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+
+if 'username' not in st.session_state:
+    st.session_state.username = ""
+
+# Thu00eam session state cho u0111iu1ec1u hu01b0u1edbng trang
+if 'page' not in st.session_state:
+    st.session_state.page = None
+
+# Danh su00e1ch tu00e0i khou1ea3n mu1eabu (trong thu1ef1c tu1ebf nu00ean lu01b0u trong cu01a1 su1edf du1eef liu1ec7u vu00e0 mu00e3 hu00f3a mu1eadt khu1ea9u)
+USERS = {
+    "admin": "admin123",
+    "user": "user123"
+}
+
+def login_page():
+    st.markdown("<h1 style='text-align: center;'>Đăng nhập Hệ thống</h1>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        st.markdown("""
+        <div class="info-card" style="padding: 30px;">
+            <h3 style="text-align: center;">Đăng nhập</h3>
+            <p style="text-align: center;">Vui lòng nhập thông tin đăng nhập của bạn.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        username = st.text_input("Tên đăng nhập")
+        password = st.text_input("Mật khẩu", type="password")
+        
+        if st.button("Đăng nhập"):
+            if username in USERS and USERS[username] == password:
+                st.session_state.logged_in = True
+                st.session_state.username = username
+                st.success(f"Đăng nhập thành công! Chào mừng, {username}")
+                st.experimental_rerun()
+            else:
+                st.error("Tên đăng nhập hoặc mật khẩu không đúng!")
+
 def surveillance_camera():
-    st.markdown("<h2 style='text-align: center;'>Camera Giám sát</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>Giám sát Camera</h2>", unsafe_allow_html=True)
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
         st.markdown("""
         <div class="info-card">
-            <h3>Camera Giám sát Trực tiếp</h3>
-            <p>Kết nối với camera để theo dõi và phát hiện đối tượng</p>
+            <h3>Giám sát an ninh</h3>
+            <p>Theo dõi và phát hiện đối tượng qua camera</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Camera stream với object detection
+        # Camera stream vu1edbi object detection
         webrtc_ctx = webrtc_streamer(
             key="surveillance",
             video_transformer_factory=ObjectDetectionTransformer,
@@ -119,69 +173,72 @@ def surveillance_camera():
             media_stream_constraints={"video": True, "audio": False},
         )
 
+
     with col2:
         st.markdown("""
         <div class="info-card">
-            <h3>Điều khiển Camera</h3>
-            <p>Các tùy chọn điều khiển camera giám sát</p>
+            <h3>Camera Giám Sát</h3>
+            <p>Giám sát trực tiếp từ camera</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Các nút điều khiển
-        if st.button("🔄 Làm mới Camera"):
+        # Cu00e1c nu00fat u0111iu1ec1u khiu1ec3n
+        if st.button("Bắt đầu giám sát"):
+            st.session_state.surveillance_active = True
+         #   st.experimental_rerun()
             st.experimental_rerun()
             
         detection_options = st.multiselect(
-            "Chọn đối tượng cần phát hiện",
-            ["Người", "Khuôn mặt", "Phương tiện", "Vật thể khả nghi"],
-            default=["Người"]
+            "Chọn các đối tượng cần phát hiện:",
+            ["Khuôn mặt", "Phương tiện", "Vật thể khả nghi"],
+            default=["Khuôn mặt"]
         )
         
         sensitivity = st.slider("Độ nhạy phát hiện", 0, 100, 50)
         
-        if st.button("📸 Chụp ảnh"):
-            st.success("Đã chụp và lưu ảnh thành công!")
+        if st.button("Chụp ảnh"):
+            st.success("Ảnh đã được chụp thành công!")
 
-# Thêm class cho object detection
+# Thu00eam class cho object detection
 class ObjectDetectionTransformer(VideoTransformerBase):
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
         
-        # Thêm logic phát hiện đối tượng ở đây
-        # (Có thể sử dụng OpenCV, YOLO, hoặc các model khác)
+        # Thu00eam logic phu00e1t hiu1ec7n u0111u1ed1i tu01b0u1ee3ng u1edf u0111u00e2y
+        # (Cu00f3 thu1ec3 su1eed du1ee5ng OpenCV, YOLO, hou1eb7c cu00e1c model khu00e1c)
         
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 def init_camera():
     """
-    Khởi tạo camera và kiểm tra kết nối
+    Khu1edfi tu1ea1o camera vu00e0 kiu1ec3m tra ku1ebft nu1ed1i
     """
     try:
-        # Thử kết nối với camera của thiết bị
+        # Thu1eed ku1ebft nu1ed1i vu1edbi camera cu1ee7a thiu1ebft bu1ecb
         camera = cv2.VideoCapture(0)
         
-        # Kiểm tra xem camera có hoạt động không
+        # Kiu1ec3m tra xem camera cu00f3 hou1ea1t u0111u1ed9ng khu00f4ng
         if not camera.isOpened():
-            st.error("Không thể kết nối với camera. Vui lòng kiểm tra lại thiết bị.")
+            st.error("Không thể kết nối với camera!")
             return None
             
         return camera
     except Exception as e:
-        st.error(f"Lỗi khi khởi tạo camera: {str(e)}")
+        st.error(f"Lỗi: {str(e)}")
         return None
 
 def process_image_for_qr(image):
     """
-    Xử lý ảnh để tìm và giải mã QR code
+    Xu1eed lu00fd u1ea3nh u0111u1ec3 tu00ecm vu00e0 giu1ea3i mu00e3 QR code
     """
     try:
-        # Chuyển đổi ảnh sang định dạng phù hợp
+        # Chuyu1ec3n u0111u1ed5i u1ea3nh sang u0111u1ecbnh du1ea1ng phu00f9 hu1ee3p
         if isinstance(image, np.ndarray):
             frame_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         else:
             frame_rgb = np.array(image)
 
-        # Giải mã QR
+        # Giu1ea3i mu00e3 QR
         decoded_objects = decode(frame_rgb)
         
         for obj in decoded_objects:
@@ -189,21 +246,21 @@ def process_image_for_qr(image):
             citizen_info = qr_data.split('|')
             
             if len(citizen_info) >= 7:
-                # Tạo thư mục lưu ảnh nếu chưa tồn tại
+                # Tu1ea1o thu01b0 mu1ee5c lu01b0u u1ea3nh nu1ebfu chu01b0a tu1ed3n tu1ea1i
                 os.makedirs("uploaded_images", exist_ok=True)
                 
-                # Tạo tên file ảnh với timestamp
+                # Tu1ea1o tu00ean file u1ea3nh vu1edbi timestamp
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 image_filename = f"citizen_image_{timestamp}.jpg"
                 image_path = os.path.join("uploaded_images", image_filename)
                 
-                # Lưu ảnh
+                # Lu01b0u u1ea3nh
                 if isinstance(image, np.ndarray):
                     cv2.imwrite(image_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
                 else:
                     image.save(image_path)
     
-                # Tạo bản ghi mới
+                # Tu1ea1o bu1ea3n ghi mu1edbi
                 new_data = {
                     'id': citizen_info[0],
                     'cccd': citizen_info[1],
@@ -216,20 +273,20 @@ def process_image_for_qr(image):
                     'image_path': image_path
                 }
                 
-                # Cập nhật DataFrame
+                # Cu1eadp nhu1eadt DataFrame
                 st.session_state.citizens_data = pd.concat([
                     st.session_state.citizens_data,
                     pd.DataFrame([new_data])
                 ], ignore_index=True)
                 
-                return True, "Quét QR thành công!"
+                return True, "QR code processed successfully!"
                 
-        return False, "Không tìm thấy mã QR trong ảnh."
+        return False, "Lỗi không xác định."
     
     except Exception as e:
-        return False, f"Lỗi khi xử lý ảnh: {str(e)}"
+        return False, f"Lỗi: {str(e)}"
 
-# Thêm vào đầu file
+# Thu00eam vu00e0o u0111u1ea7u file
 RTC_CONFIGURATION = RTCConfiguration(
     {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
 )
@@ -242,14 +299,14 @@ class QRCodeVideoTransformer(VideoTransformerBase):
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
         
-        # Xử lý QR code
+        # Xu1eed lu00fd QR code
         try:
-            # Chuyển sang RGB để xử lý
+            # Chuyu1ec3n sang RGB u0111u1ec3 xu1eed lu00fd
             frame_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             decoded_objects = decode(frame_rgb)
             
             for obj in decoded_objects:
-                # Vẽ khung xung quanh QR code
+                # Vu1ebd khung xung quanh QR code
                 points = obj.polygon
                 if len(points) > 4:
                     hull = cv2.convexHull(np.array([point for point in points], dtype=np.float32))
@@ -257,12 +314,12 @@ class QRCodeVideoTransformer(VideoTransformerBase):
                 else:
                     cv2.polylines(img, [np.array(points, dtype=np.int32)], True, (0, 255, 0), 2)
                 
-                # Giải mã QR
+                # Giu1ea3i mu00e3 QR
                 qr_data = obj.data.decode('utf-8')
                 self.qr_data = qr_data
                 self.qr_detected = True
                 
-                # Hiển thị thông tin
+                # Hiu1ec3n thu1ecb thu00f4ng tin
                 cv2.putText(img, "QR Code Detected!", (10, 30),
                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 
@@ -273,28 +330,28 @@ class QRCodeVideoTransformer(VideoTransformerBase):
 
 def scan_qr_code():
     """
-    Chức năng quét mã QR từ camera hoặc ảnh tải lên
+    Chu1ee9c nu0103ng quu00e9t mu00e3 QR tu1eeb camera hou1eb7c u1ea3nh tu1ea3i lu00ean
     """
     st.markdown("<h2 style='text-align: center;'>Quét mã QR CCCD</h2>", unsafe_allow_html=True)
     
-    # Chia layout thành 2 cột
+    # Chia layout thu00e0nh 2 cu1ed9t
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
         <div class="info-card">
-            <h3>Tải lên ảnh CCCD</h3>
-            <p>Hỗ trợ các định dạng: JPG, JPEG, PNG</p>
+            <h3>Hướng dẫn</h3>
+            <p>Định dạng hỗ trợ: JPG, JPEG, PNG</p>
         </div>
         """, unsafe_allow_html=True)
         
-        uploaded_file = st.file_uploader("Chọn ảnh CCCD", type=['jpg', 'jpeg', 'png'])
+        uploaded_file = st.file_uploader("Tải lên ảnh", type=['jpg', 'jpeg', 'png'])
         
         if uploaded_file is not None:
             image = Image.open(uploaded_file)
             st.image(image, caption="Ảnh đã tải lên", use_column_width=True)
             
-            if st.button("Xử lý ảnh"):
+            if st.button("Tải ảnh lên"):
                 success, message = process_image_for_qr(image)
                 if success:
                     st.markdown(f'<div class="success-message">{message}</div>', unsafe_allow_html=True)
@@ -304,20 +361,20 @@ def scan_qr_code():
     with col2:
         st.markdown("""
         <div class="info-card">
-            <h3>Quét qua Camera</h3>
-            <p>Sử dụng camera để quét trực tiếp</p>
+            <h3>Qúet qua Camera</h3>
+            <p>Vui lòng đảm bảo rằng camera của bạn đã được kết nối và hoạt động bình thường.</p>
             <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px;">
-                <h4 style="color: #856404;">⚠️ Lưu ý quan trọng:</h4>
+                <h4 style="color: #856404;">Hướng dẫn sử dụng:</h4>
                 <ol style="color: #856404;">
-                    <li>Khi bấm "START", trình duyệt sẽ yêu cầu quyền truy cập camera</li>
-                    <li>Vui lòng chọn "Allow" hoặc "Cho phép" để sử dụng tính năng này</li>
-                    <li>Đảm bảo camera không bị ứng dụng khác sử dụng</li>
+                    <li>Kiểm tra kết nối và cấp quyền truy cập camera trước khi sử dụng</li>
+                    <li>Đặt camera ở vị trí phù hợp để quét mã QR một cách chính xác, ấn nút Allow</li>
+                    <li>Đảm bảo ánh sáng đủ để camera có thể nhận diện mã QR</li>
                 </ol>
             </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Khởi tạo WebRTC streamer
+        # Khu1edfi tu1ea1o WebRTC streamer
         webrtc_ctx = webrtc_streamer(
             key="qr-scanner",
             video_transformer_factory=QRCodeVideoTransformer,
@@ -325,16 +382,16 @@ def scan_qr_code():
             media_stream_constraints={"video": True, "audio": False},
         )
 
-       # Trong hàm transform của class QRCodeVideoTransformer, sửa phần xử lý khi phát hiện QR:
+       # Trong hu00e0m transform cu1ee7a class QRCodeVideoTransformer, su1eeda phu1ea7n xu1eed lu00fd khi phu00e1t hiu1ec7n QR:
         if webrtc_ctx.video_transformer:
             if webrtc_ctx.video_transformer.qr_detected:
                 qr_data = webrtc_ctx.video_transformer.qr_data
                 citizen_info = qr_data.split('|')
                 
                 if len(citizen_info) >= 7:
-                    st.success("Đã quét thành công QR Code!")
+                    st.success("QR code detected and processed successfully!")
                     
-                    # Lưu thông tin vào DataFrame
+                    # Lu01b0u thu00f4ng tin vu00e0o DataFrame
                     new_data = {
                         'id': citizen_info[0],
                         'cccd': citizen_info[1],
@@ -352,7 +409,7 @@ def scan_qr_code():
                         pd.DataFrame([new_data])
                     ], ignore_index=True)
                     
-                    # Hiển thị thông tin
+                    # Hiu1ec3n thu1ecb thu00f4ng tin
                     st.markdown("""
                     <div style="background-color: #e8f5e9; padding: 20px; border-radius: 10px; margin-top: 20px;">
                         <h4 style="color: #2e7d32;">Thông tin công dân:</h4>
@@ -360,7 +417,7 @@ def scan_qr_code():
                     
                     st.write(f"**ID:** {citizen_info[0]}")
                     st.write(f"**Số CCCD:** {citizen_info[1]}")
-                    st.write(f"**Họ tên:** {citizen_info[2]}")
+                    st.write(f"**Họ và tên:** {citizen_info[2]}")
                     st.write(f"**Ngày sinh:** {citizen_info[3]}")
                     st.write(f"**Giới tính:** {citizen_info[4]}")
                     st.write(f"**Địa chỉ:** {citizen_info[5]}")
@@ -372,20 +429,20 @@ def show_citizen_data():
     
     if not st.session_state.citizens_data.empty:
         for index, row in st.session_state.citizens_data.iterrows():
-            with st.expander(f"Công dân: {row['name']} - CCCD: {row['cccd']}"):
+            with st.expander(f"Công dân:{row['name']} - CCCD: {row['cccd']}"):
                 col1, col2 = st.columns([1, 2])
                 
                 with col1:
                     if os.path.exists(row['image_path']):
-                        st.image(row['image_path'], caption="Ảnh CCCD", use_column_width=True)
+                        st.image(row['image_path'], caption="ảnh CCCD", use_column_width=True)
                     else:
-                        st.warning("Ảnh không khả dụng")
+                        st.warning("Ảnh CCCD không tồn tại!")
                 
                 with col2:
                     st.markdown(f"""
                     **ID:** {row['id']}  
                     **Số CCCD:** {row['cccd']}  
-                    **Họ tên:** {row['name']}  
+                    **Tên:** {row['name']}  
                     **Ngày sinh:** {row['dob']}  
                     **Giới tính:** {row['sex']}  
                     **Địa chỉ:** {row['address']}  
@@ -396,9 +453,89 @@ def show_citizen_data():
         st.info("Chưa có dữ liệu công dân nào.")
 
 
+def show_homepage():
+    st.markdown("<h1 style='text-align: center;'>Hệ thống Quản lý Công dân</h1>", unsafe_allow_html=True)
+    
+    # Grid layout cho cu00e1c chu1ee9c nu0103ng
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div class="feature-button">
+            <h3>Quét QR CCCD</h3>
+            <p>Quét mã QR từ CCCD</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Nu00fat ku1ebft nu1ed1i vu1edbi chu1ee9c nu0103ng quu00e9t QR
+        if st.button("Quét QR CCCD"):
+            st.session_state.page = "scan_qr"
+            st.experimental_rerun()
+        
+    with col2:
+        st.markdown("""
+        <div class="feature-button">
+            <h3>Quản lý Công dân</h3>
+            <p>Quản lý dữ liệu công dân hiệu quả và dễ dàng.</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Nu00fat ku1ebft nu1ed1i vu1edbi chu1ee9c nu0103ng quu1ea3n lu00fd du1eef liu1ec7u
+        if st.button("Xem dữ liệu công dân"):
+            st.session_state.page = "view_data"
+            st.experimental_rerun()
+        
+    with col3:
+        st.markdown("""
+        <div class="feature-button">
+            <h3>Camera Giám Sát</h3>
+            <p>Theo dõi qua camera an ninh</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Nu00fat ku1ebft nu1ed1i vu1edbi chu1ee9c nu0103ng camera giu00e1m su00e1t
+        if st.button("Camera giu00e1m su00e1t"):
+            st.session_state.page = "camera"
+            st.experimental_rerun()
+    
+    # Kiu1ec3m tra nu1ebfu cu00f3 chuyu1ec3n trang tu1eeb cu00e1c nu00fat
+    if 'page' in st.session_state:
+        if st.session_state.page == "scan_qr":
+            scan_qr_code()
+            st.session_state.page = None
+        elif st.session_state.page == "view_data":
+            show_citizen_data()
+            st.session_state.page = None
+        elif st.session_state.page == "camera":
+            surveillance_camera()
+            st.session_state.page = None
+
+def show_statistics():
+    st.markdown("<h2 style='text-align: center;'>Thống kê</h2>", unsafe_allow_html=True)
+    st.write("Hiển thị các số liệu thống kê liên quan đến công dân.")
+    # Thu00eam code hiu1ec3n thu1ecb thu1ed1ng ku00ea
+
+def show_settings():
+    st.markdown("<h2 style='text-align: center;'>Cài đặt</h2>", unsafe_allow_html=True)
+    st.write("Tùy chỉnh các thiết lập của hệ thống tại đây.")
+    # Thu00eam code cu00e0i u0111u1eb7t
+
+
 def main():
-    st.sidebar.markdown("<h1 style='text-align: center;'>🏛️</h1>", unsafe_allow_html=True)
+    # Kiu1ec3m tra u0111u0103ng nhu1eadp
+    if not st.session_state.logged_in:
+        login_page()
+        return
+    
+    # Hiu1ec3n thu1ecb giao diu1ec7n chu00ednh sau khi u0111u0103ng nhu1eadp
+    st.sidebar.markdown("<h1 style='text-align: center;'>ud83cudfdbufe0f</h1>", unsafe_allow_html=True)
     st.sidebar.markdown("<h2 style='text-align: center;'>Quản lý Công dân</h2>", unsafe_allow_html=True)
+    
+    # Hiu1ec3n thu1ecb thu00f4ng tin ngu01b0u1eddi du00f9ng u0111u0103ng nhu1eadp
+    st.sidebar.markdown(f"""<div style='text-align: center; padding: 10px; background-color: #e8f5e9; 
+                        border-radius: 5px; margin-bottom: 20px;'>
+                        ud83dudc64 <b>{st.session_state.username}</b></div>""", 
+                        unsafe_allow_html=True)
     
     menu = [
         "Trang chủ",
@@ -411,20 +548,29 @@ def main():
     
     choice = st.sidebar.selectbox("Chọn chức năng", menu)
     
-    # Hiển thị các nút chức năng phụ trong sidebar
+    # Hiu1ec3n thu1ecb cu00e1c nu00fat chu1ee9c nu0103ng phu1ee5 trong sidebar
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### Công cụ nhanh")
+    st.sidebar.markdown("### Chức năng nhanh")
     
-    if st.sidebar.button("📷 Kết nối Camera"):
+    if st.sidebar.button("📷 Camera"):
         st.session_state.page = "camera"
+        st.experimental_rerun()
         
     if st.sidebar.button("📊 Báo cáo"):
         st.session_state.page = "reports"
+        st.experimental_rerun()
         
     if st.sidebar.button("⚙️ Cài đặt"):
         st.session_state.page = "settings"
+        st.experimental_rerun()
     
-    # Xử lý các trang
+    # Nu00fat u0111u0103ng xuu1ea5t
+    if st.sidebar.button("🚪 Đăng xuất"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.experimental_rerun()
+    
+    # Xu1eed lu00fd cu00e1c trang
     if choice == "Trang chủ":
         show_homepage()
     elif choice == "Quét QR CCCD":
@@ -437,44 +583,6 @@ def main():
         show_statistics()
     elif choice == "Cài đặt":
         show_settings()
-
-def show_homepage():
-    st.markdown("<h1 style='text-align: center;'>Hệ thống Quản lý Công dân</h1>", unsafe_allow_html=True)
-    
-    # Grid layout cho các chức năng
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("""
-        <div class="feature-button">
-            <h3>📷 Quét QR CCCD</h3>
-            <p>Quét và xử lý thông tin từ CCCD</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col2:
-        st.markdown("""
-        <div class="feature-button">
-            <h3>👥 Quản lý dữ liệu</h3>
-            <p>Xem và quản lý thông tin công dân</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-    with col3:
-        st.markdown("""
-        <div class="feature-button">
-            <h3>🎥 Giám sát</h3>
-            <p>Theo dõi qua camera an ninh</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-def show_statistics():
-    st.markdown("<h2 style='text-align: center;'>Thống kê Hệ thống</h2>", unsafe_allow_html=True)
-    # Thêm code hiển thị thống kê
-
-def show_settings():
-    st.markdown("<h2 style='text-align: center;'>Cài đặt Hệ thống</h2>", unsafe_allow_html=True)
-    # Thêm code cài đặt
 
 
 if __name__ == '__main__':
