@@ -261,16 +261,25 @@ def surveillance_camera():
         
         if camera_option == "Camera trực tiếp (WebRTC)":
             try:
-                image = camera_input_live()
+                # Enhanced WebRTC streamer with better error handling
+                webrtc_ctx = safe_webrtc_streamer(
+                    key="surveillance",
+                    video_processor_factory=ObjectDetectionTransformer,
+                    rtc_configuration=RTC_CONFIGURATION,
+                    media_stream_constraints={
+                        "video": {"width": 640, "height": 480, "frameRate": 15},
+                        "audio": False
+                    },
+                    async_processing=False,
+                )
                 
-                if image is not None:
-                    st.image(image, caption="Camera Live Feed")
-                    
-                    if st.button("Phân tích ảnh hiện tại"):
-                        with st.spinner("Đang phân tích..."):
-                            # Xử lý ảnh ở đây
-                            st.success("Phân tích hoàn thành!")
-                        
+                # Display connection status
+                if webrtc_ctx and webrtc_ctx.state.playing:
+                    st.success("✅ Camera đang hoạt động")
+                elif webrtc_ctx and webrtc_ctx.state.signalling:
+                    st.warning("🔄 Đang kết nối camera...")
+                else:
+                    st.info("📷 Nhấn 'START' để bắt đầu camera")
                     
             except Exception as e:
                 st.error(f"Lỗi kết nối camera: {str(e)}")
