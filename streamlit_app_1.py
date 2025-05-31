@@ -7,13 +7,16 @@ import pandas as pd
 from datetime import datetime
 import os
 from PIL import Image
+#from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration 
 import av
-from contextlib import contextmanager
+# d:\Codes\citizen-management\streamlit_app.py
+
 
 # Thêm try-except cho import asyncio để xử lý lỗi liên quan đến asyncio
 try:
     import asyncio
     import threading
+except ImportError:
     import uuid
     import json
     from typing import List, Dict, Any, Optional
@@ -21,18 +24,12 @@ try:
     from aiortc.contrib.media import MediaPlayer, MediaRecorder, MediaRelay
     import logging
     AIORTC_AVAILABLE = True
-except ImportError as e:
+    WEBRTC_AVAILABLE = False
     AIORTC_AVAILABLE = False
     st.warning(f"aiortc không khả dụng: {str(e)}. Chỉ sử dụng chức năng upload ảnh.")
-
-# Thiết lập giao diện trang
 st.set_page_config(
     page_title="HỆ THỐNG QUẢN LÝ CÔNG DÂN",
     page_icon="📋",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
 # Cấu hình logging cho aiortc
 if AIORTC_AVAILABLE:
     logging.basicConfig(level=logging.INFO)
@@ -103,8 +100,11 @@ class QRCodeProcessor(VideoProcessor):
             print(f"Error processing QR code: {str(e)}")
             
         return av.VideoFrame.from_ndarray(img, format="bgr24")
+    initial_sidebar_state="expanded"
+)
 
-# CSS tùy chỉnh
+# CSS tu00f9y chu1ec9nh
+# Cu1eadp nhu1eadt phu1ea7n CSS
 st.markdown("""
     <style>
     .main {
@@ -190,20 +190,20 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 
-# Khởi tạo session state
+# Khu1edfi tu1ea1o session state
 if 'citizens_data' not in st.session_state:
     st.session_state.citizens_data = pd.DataFrame(columns=[
         'id', 'cccd', 'name', 'dob', 'sex', 'address', 'expdate', 'scan_date', 'image_path'
     ])
 
-# Thêm session state cho đăng nhập
+# Thu00eam session state cho u0111u0103ng nhu1eadp
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
 if 'username' not in st.session_state:
     st.session_state.username = ""
 
-# Thêm session state cho điều hướng trang
+# Thu00eam session state cho u0111iu1ec1u hu01b0u1edbng trang
 if 'page' not in st.session_state:
     st.session_state.page = None
     
@@ -211,45 +211,34 @@ if 'page' not in st.session_state:
 if 'menu_choice' not in st.session_state:
     st.session_state.menu_choice = "Trang chủ"
 
-# Thêm session state cho aiortc
-if 'peer_connection_id' not in st.session_state:
-    st.session_state.peer_connection_id = None
-
-if 'video_processor' not in st.session_state:
-    st.session_state.video_processor = None
-
-# Danh sách tài khoản mẫu (trong thực tế nên lưu trong cơ sở dữ liệu và mã hóa mật khẩu)
+# Danh su00e1ch tu00e0i khou1ea3n mu1eabu (trong thu1ef1c tu1ebf nu00ean lu01b0u trong cu01a1 su1edf du1eef liu1ec7u vu00e0 mu00e3 hu00f3a mu1eadt khu1ea9u)
 USERS = {
     "admin": "admin123",
-    "user": "user123"
-}
-
+ 
+# Hu00e0m xu1eed lu00fd aiortc
+a
 # ICE servers configuration for aiortc
 ICE_SERVERS = [
     {"urls": ["stun:stun.l.google.com:19302"]}
-]
-
-# Hàm xử lý aiortc
-async def process_offer(offer, video_processor=None):
-    pc_id = str(uuid.uuid4())
-    pc = RTCPeerConnection({"iceServers": ICE_SERVERS})
+]    pc_id = str(uuid.uuid4())
+    pc = RTCPeerConnection()
     peer_connections[pc_id] = pc
     
-    relay = MediaRelay()
+    pc = RTCPeerConnection({"iceServers": ICE_SERVERS})
     
     @pc.on("track")
     def on_track(track):
         if track.kind == "video":
-            # Sử dụng video processor nếu có
+            # Su1eed du1ee5ng video processor nu1ebfu cu00f3
             if video_processor:
                 transformed_track = VideoTransformTrack(relay.subscribe(track), processor=video_processor)
             else:
-                # Mặc định chỉ chuyển tiếp video
+                # Mu1eb7c u0111u1ecbnh chu1ec9 chuyu1ec3n tiu1ebfp video
                 transformed_track = VideoTransformTrack(relay.subscribe(track))
                 
             pc.addTrack(transformed_track)
     
-    # Thiết lập kết nối
+    # Thiu1ebft lu1eadp ku1ebft nu1ed1i
     offer = RTCSessionDescription(sdp=offer["sdp"], type=offer["type"])
     await pc.setRemoteDescription(offer)
     answer = await pc.createAnswer()
@@ -262,83 +251,19 @@ async def close_peer_connection(pc_id):
         pc = peer_connections[pc_id]
         await pc.close()
         del peer_connections[pc_id]
-
-def setup_asyncio():
-    """Setup asyncio event loop for WebRTC"""
+}
+def safe_webrtc_streamer(**kwargs):
+    """Wrapper an toàn cho webrtc_streamer với error handling"""
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            asyncio.set_event_loop(asyncio.new_event_loop())
-    except RuntimeError:
-        asyncio.set_event_loop(asyncio.new_event_loop())
-
-@contextmanager
-def aiortc_context():
-    """Context manager for aiortc operations"""
-    try:
-        setup_asyncio()
-        yield
+        if not WEBRTC_AVAILABLE:
+            st.error("WebRTC không khả dụng. Vui lòng sử dụng chức năng upload ảnh.")
+            return None
+            
+        return webrtc_streamer(**kwargs)
     except Exception as e:
-        st.error(f"aiortc Error: {str(e)}")
-        st.info("Please try refreshing the page or use the image upload feature instead.")
-
-def create_webrtc_component(key, video_processor=None):
-    """Create a WebRTC component using aiortc"""
-    if not AIORTC_AVAILABLE:
-        st.error("aiortc không khả dụng. Vui lòng sử dụng chức năng upload ảnh.")
+        st.error(f"Lỗi WebRTC: {str(e)}")
+        st.info("Hãy thử sử dụng chức năng upload ảnh thay thế.")
         return None
-    
-    # Tạo container cho video
-    video_container = st.empty()
-    status_container = st.empty()
-    
-    # Tạo các nút điều khiển
-    col1, col2 = st.columns(2)
-    start_button = col1.button("Bắt đầu Camera", key=f"start_{key}")
-    stop_button = col2.button("Dừng Camera", key=f"stop_{key}")
-    
-    # Xử lý khi nhấn nút bắt đầu
-    if start_button:
-        status_container.info("Đang kết nối camera...")
-        
-        # Tạo offer SDP
-        offer = {
-            "sdp": "",
-            "type": "offer"
-        }
-        
-        # Xử lý offer bằng asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        answer, pc_id = loop.run_until_complete(process_offer(offer, video_processor))
-        
-        # Lưu ID kết nối
-        st.session_state.peer_connection_id = pc_id
-        st.session_state.video_processor = video_processor
-        
-        # Hiển thị trạng thái
-        status_container.success("Camera đang hoạt động")
-        
-        # Hiển thị video (giả lập)
-        video_container.image(np.zeros((480, 640, 3), dtype=np.uint8), channels="RGB", use_column_width=True)
-        
-    # Xử lý khi nhấn nút dừng
-    if stop_button and st.session_state.peer_connection_id:
-        # Đóng kết nối
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(close_peer_connection(st.session_state.peer_connection_id))
-        
-        # Xóa ID kết nối
-        st.session_state.peer_connection_id = None
-        st.session_state.video_processor = None
-        
-        # Hiển thị trạng thái
-        status_container.info("Camera đã dừng")
-        video_container.empty()
-    
-    return st.session_state.video_processor
-
 def login_page():
     st.markdown("<h1 style='text-align: center;'>Đăng nhập Hệ thống</h1>", unsafe_allow_html=True)
     
@@ -360,21 +285,9 @@ def login_page():
                 st.session_state.logged_in = True
                 st.session_state.username = username
                 st.success(f"Đăng nhập thành công! Chào mừng, {username}")
-                st.rerun()
+                st.experimental_rerun()
             else:
                 st.error("Tên đăng nhập hoặc mật khẩu không đúng!")
-
-def video_frame_callback(frame):
-    img = frame.to_ndarray(format="bgr24")
-    flipped = img[::-1,:,:]
-    return av.VideoFrame.from_ndarray(flipped, format="bgr24")
-
-# Create a processor for flipping video
-class FlipVideoProcessor(VideoProcessor):
-    def process(self, frame):
-        img = frame.to_ndarray(format="bgr24")
-        flipped = img[::-1,:,:]
-        return av.VideoFrame.from_ndarray(flipped, format="bgr24")
 
 def surveillance_camera():
     st.markdown("<h2 style='text-align: center;'>Giám sát Camera</h2>", unsafe_allow_html=True)
@@ -384,103 +297,108 @@ def surveillance_camera():
     with col1:
         st.markdown("""
         <div class="info-card">
-        <h3>Giám sát an ninh</h3>
-        <p>Theo dõi và phát hiện đối tượng qua camera</p>
+            <h3>Giám sát an ninh</h3>
+            <p>Theo dõi và phát hiện đối tượng qua camera</p>
         </div>
         """, unsafe_allow_html=True)
+        # d:\Codes\citizen-management\streamlit_app.py
+
+# Thay thế cấu hình RTC hiện tại
+      
         
-        # Add option to choose between aiortc and file upload
-        camera_option = st.radio(
-            "Chọn phương thức:",
-            ["Camera trực tiếp (aiortc)", "Upload video/ảnh"],
-            key="camera_option"
-        )
-        
-        if camera_option == "Camera trực tiếp (aiortc)":
-            try:
-                if AIORTC_AVAILABLE:
-                    # Sử dụng aiortc
-                    processor = FlipVideoProcessor()
-                    video_processor = create_webrtc_component("surveillance", processor)
-                    
-                    # Display connection status
-                    if st.session_state.peer_connection_id:
-                        st.success("✅ Camera đang hoạt động")
-                    else:
-                        st.info("📷 Nhấn 'Bắt đầu Camera' để bắt đầu camera")
-                else:
-                    st.error("aiortc không khả dụng. Vui lòng sử dụng chức năng upload ảnh.")
-                    
-            except Exception as e:
-                st.error(f"Lỗi kết nối camera: {str(e)}")
-                st.info("Vui lòng thử sử dụng tùy chọn 'Upload video/ảnh' bên dưới")
-                
-        else:
-            # Alternative: File upload for surveillance
-            uploaded_file = st.file_uploader(
-                "Tải lên video hoặc ảnh để phân tích",
-                type=['mp4', 'avi', 'mov', 'jpg', 'jpeg', 'png'],
-                key="surveillance_upload"
+        # Camera stream với cấu hình thấp hơn
+        try:
+            webrtc_ctx = safe_webrtc_streamer(
+                key="surveillance",
+                video_processor_factory=ObjectDetectionTransformer,
+                rtc_configuration=RTC_CONFIGURATION,
+                media_stream_constraints={
+                    "video":True, 
+                    "audio": False
+                },
+                async_processing=True,  # Tắt xử lý bất đồng bộ để đơn giản hóa
             )
             
-            if uploaded_file is not None:
-                if uploaded_file.type.startswith('image'):
-                    image = Image.open(uploaded_file)
-                    st.image(image, caption="Ảnh đã tải lên", use_column_width=True)
-                    
-                    if st.button("Phân tích ảnh"):
-                        st.success("Đang phân tích ảnh...")
-                        # Add your image analysis logic here
-                        
-                else:
-                    st.video(uploaded_file)
-                    if st.button("Phân tích video"):
-                        st.success("Đang phân tích video...")
-                        # Add your video analysis logic here
+            # Hiển thị trạng thái kết nối
+            if webrtc_ctx.state.playing:
+                st.success("✅ Camera đang hoạt động")
+            elif webrtc_ctx.state.signalling:
+                st.warning("🔄 Đang kết nối camera...")
+            else:
+                st.error("❌ Camera chưa kết nối")
+                
+        except Exception as e:
+            st.error(f"Lỗi kết nối camera: {str(e)}")
+            st.info("Vui lòng thử lại hoặc kiểm tra cài đặt camera")
+
+
 
     with col2:
         st.markdown("""
         <div class="info-card">
-        <h3>Điều khiển Camera</h3>
-        <p>Cài đặt và điều khiển camera giám sát</p>
+            <h3>Camera Giám Sát</h3>
+            <p>Giám sát trực tiếp từ camera</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Camera controls
+        # Cu00e1c nu00fat u0111iu1ec1u khiu1ec3n
+        if st.button("Bắt đầu giám sát"):
+            st.session_state.surveillance_active = True
+         #   st.experimental_rerun()
+            st.experimental_rerun()
+            
         detection_options = st.multiselect(
             "Chọn các đối tượng cần phát hiện:",
             ["Khuôn mặt", "Phương tiện", "Vật thể khả nghi"],
-            default=["Khuôn mặt"],
-            key="detection_options"
+            default=["Khuôn mặt"]
         )
         
-        sensitivity = st.slider("Độ nhạy phát hiện", 0, 100, 50, key="sensitivity")
+        sensitivity = st.slider("Độ nhạy phát hiện", 0, 100, 50)
         
-        if st.button("Chụp ảnh", key="capture_btn"):
+        if st.button("Chụp ảnh"):
             st.success("Ảnh đã được chụp thành công!")
+
+# Thu00eam class cho object detection
+class ObjectDetectionTransformer(VideoProcessorBase):
+    def recv(self, frame):
+       
+        img = frame.to_ndarray(format="bgr24")
+        
+        # Thu00eam logic phu00e1t hiu1ec7n u0111u1ed1i tu01b0u1ee3ng u1edf u0111u00e2y
+        # (Cu00f3 thu1ec3 su1eed du1ee5ng OpenCV, YOLO, hou1eb7c cu00e1c model khu00e1c)
+        
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
+
+def init_camera():
+    """
+    Khu1edfi tu1ea1o camera vu00e0 kiu1ec3m tra ku1ebft nu1ed1i
+    """
+    try:
+        # Thu1eed ku1ebft nu1ed1i vu1edbi camera cu1ee7a thiu1ebft bu1ecb
+        camera = cv2.VideoCapture(0)
+        
+        # Kiu1ec3m tra xem camera cu00f3 hou1ea1t u0111u1ed9ng khu00f4ng
+        if not camera.isOpened():
+            st.error("Không thể kết nối với camera!")
+            return None
             
-        # Add troubleshooting section
-        with st.expander("🔧 Khắc phục sự cố"):
-            st.markdown("""
-            **Nếu camera không hoạt động:**
-            1. Làm mới trang (F5)
-            2. Kiểm tra quyền truy cập camera
-            3. Thử sử dụng trình duyệt khác
-            4. Sử dụng tùy chọn 'Upload video/ảnh'
-            """)
+        return camera
+    except Exception as e:
+        st.error(f"Lỗi: {str(e)}")
+        return None
 
 def process_image_for_qr(image):
     """
-    Xử lý ảnh để tìm và giải mã QR code
+    Xu1eed lu00fd u1ea3nh u0111u1ec3 tu00ecm vu00e0 giu1ea3i mu00e3 QR code
     """
     try:
-        # Chuyển đổi ảnh sang định dạng phù hợp
+        # Chuyu1ec3n u0111u1ed5i u1ea3nh sang u0111u1ecbnh du1ea1ng phu00f9 hu1ee3p
         if isinstance(image, np.ndarray):
             frame_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         else:
             frame_rgb = np.array(image)
 
-        # Giải mã QR
+        # Giu1ea3i mu00e3 QR
         decoded_objects = decode(frame_rgb)
         
         for obj in decoded_objects:
@@ -488,21 +406,21 @@ def process_image_for_qr(image):
             citizen_info = qr_data.split('|')
             
             if len(citizen_info) >= 7:
-                # Tạo thư mục lưu ảnh nếu chưa tồn tại
+                # Tu1ea1o thu01b0 mu1ee5c lu01b0u u1ea3nh nu1ebfu chu01b0a tu1ed3n tu1ea1i
                 os.makedirs("uploaded_images", exist_ok=True)
                 
-                # Tạo tên file ảnh với timestamp
+                # Tu1ea1o tu00ean file u1ea3nh vu1edbi timestamp
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 image_filename = f"citizen_image_{timestamp}.jpg"
                 image_path = os.path.join("uploaded_images", image_filename)
                 
-                # Lưu ảnh
+                # Lu01b0u u1ea3nh
                 if isinstance(image, np.ndarray):
                     cv2.imwrite(image_path, cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
                 else:
                     image.save(image_path)
     
-                # Tạo bản ghi mới
+                # Tu1ea1o bu1ea3n ghi mu1edbi
                 new_data = {
                     'id': citizen_info[0],
                     'cccd': citizen_info[1],
@@ -515,7 +433,7 @@ def process_image_for_qr(image):
                     'image_path': image_path
                 }
                 
-                # Cập nhật DataFrame
+                # Cu1eadp nhu1eadt DataFrame
                 st.session_state.citizens_data = pd.concat([
                     st.session_state.citizens_data,
                     pd.DataFrame([new_data])
@@ -528,141 +446,152 @@ def process_image_for_qr(image):
     except Exception as e:
         return False, f"Lỗi: {str(e)}"
 
+# Thu00eam vu00e0o u0111u1ea7u file
+RTC_CONFIGURATION = RTCConfiguration(
+    {"iceServers": [
+        {"urls": ["stun:stun.l.google.com:19302"]},
+        {"urls": ["stun:stun1.l.google.com:19302"]},
+        {"urls": ["stun:stun2.l.google.com:19302"]}
+    ]}
+        {"urls": ["stun:stun.l.google.com:19302"]},
+        {"urls": ["stun:stun1.l.google.com:19302"]},
+        {"urls": ["stun:stun2.l.google.com:19302"]}
+    ]}
+)
+
+class QRCodeVideoTransformer(VideoProcessorBase):
+    def __init__(self):
+        self.qr_detected = False
+        self.qr_data = None
+
+    def transform(self, frame):
+        img = frame.to_ndarray(format="bgr24")
+        
+        # Xu1eed lu00fd QR code
+        try:
+            # Chuyu1ec3n sang RGB u0111u1ec3 xu1eed lu00fd
+            frame_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            decoded_objects = decode(frame_rgb)
+            
+            for obj in decoded_objects:
+                # Vu1ebd khung xung quanh QR code
+                points = obj.polygon
+                if len(points) > 4:
+                    hull = cv2.convexHull(np.array([point for point in points], dtype=np.float32))
+                    cv2.polylines(img, [hull], True, (0, 255, 0), 2)
+                else:
+                    cv2.polylines(img, [np.array(points, dtype=np.int32)], True, (0, 255, 0), 2)
+                
+                # Giu1ea3i mu00e3 QR
+                qr_data = obj.data.decode('utf-8')
+                self.qr_data = qr_data
+                self.qr_detected = True
+                
+                # Hiu1ec3n thu1ecb thu00f4ng tin
+                cv2.putText(img, "QR Code Detected!", (10, 30),
+                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                
+        except Exception as e:
+            print(f"Error processing QR code: {str(e)}")
+            
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
+
 def scan_qr_code():
-    """Enhanced QR code scanning with better error handling"""
+    """
+    Chu1ee9c nu0103ng quu00e9t mu00e3 QR tu1eeb camera hou1eb7c u1ea3nh tu1ea3i lu00ean
+    """
     st.markdown("<h2 style='text-align: center;'>Quét mã QR CCCD</h2>", unsafe_allow_html=True)
     
-    # Create tabs for different input methods
-    tab1, tab2 = st.tabs(["📁 Upload Ảnh", "📷 Camera"])
+    # Chia layout thu00e0nh 2 cu1ed9t
+    col1, col2 = st.columns(2)
     
-    with tab1:
+    with col1:
         st.markdown("""
         <div class="info-card">
-        <h3>Tải lên ảnh QR Code</h3>
-        <p>Định dạng hỗ trợ: JPG, JPEG, PNG</p>
+            <h3>Hướng dẫn</h3>
+            <p>Định dạng hỗ trợ: JPG, JPEG, PNG</p>
         </div>
         """, unsafe_allow_html=True)
         
-        uploaded_file = st.file_uploader(
-            "Chọn ảnh chứa QR code", 
-            type=['jpg', 'jpeg', 'png'],
-            key="qr_upload"
-        )
+        uploaded_file = st.file_uploader("Tải lên ảnh", type=['jpg', 'jpeg', 'png'])
         
         if uploaded_file is not None:
             image = Image.open(uploaded_file)
             st.image(image, caption="Ảnh đã tải lên", use_column_width=True)
             
-            if st.button("Xử lý QR Code", key="process_qr"):
-                with st.spinner("Đang xử lý..."):
-                    success, message = process_image_for_qr(image)
-                    if success:
-                        st.success(message)
-                    else:
-                        st.error(message)
-    
-    with tab2:
+            if st.button("Tải ảnh lên"):
+                success, message = process_image_for_qr(image)
+                if success:
+                    st.markdown(f'<div class="success-message">{message}</div>', unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="error-message">{message}</div>', unsafe_allow_html=True)
+
+    with col2:
         st.markdown("""
         <div class="info-card">
-        <h3>Quét qua Camera</h3>
-        <p>Sử dụng camera để quét QR code trực tiếp</p>
+            <h3>Qúet qua Camera</h3>
+            <p>Vui lòng đảm bảo rằng camera của bạn đã được kết nối và hoạt động bình thường.</p>
+            <div style="background-color: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                <h4 style="color: #856404;">Hướng dẫn sử dụng:</h4>
+                <ol style="color: #856404;">
+                    <li>Kiểm tra kết nối và cấp quyền truy cập camera trước khi sử dụng</li>
+                    <li>Đặt camera ở vị trí phù hợp để quét mã QR một cách chính xác, ấn nút Allow</li>
+                    <li>Đảm bảo ánh sáng đủ để camera có thể nhận diện mã QR</li>
+                </ol>
+            </div>
         </div>
         """, unsafe_allow_html=True)
-        
-        # Add option to choose scanning method
-        scan_method = st.radio(
-            "Chọn phương thức quét:",
-            ["Camera aiortc", "Chụp ảnh từ camera"],
-            key="scan_method"
+
+        # Khu1edfi tu1ea1o WebRTC streamer
+        webrtc_ctx = safe_webrtc_streamer(
+            key="qr-scanner",
+            video_processor_factory=QRCodeVideoTransformer,
+            rtc_configuration=RTC_CONFIGURATION,
+            media_stream_constraints={"video": True, "audio": False},
+            async_processing=True,
         )
-        
-        if scan_method == "Camera aiortc":
-            try:
-                if AIORTC_AVAILABLE:
-                    # Sử dụng aiortc với QR processor
-                    qr_processor = QRCodeProcessor()
-                    video_processor = create_webrtc_component("qr-scanner", qr_processor)
+
+       # Trong hu00e0m transform cu1ee7a class QRCodeVideoTransformer, su1eeda phu1ea7n xu1eed lu00fd khi phu00e1t hiu1ec7n QR:
+        if webrtc_ctx.video_transformer:
+            if webrtc_ctx.video_transformer.qr_detected:
+                qr_data = webrtc_ctx.video_transformer.qr_data
+                citizen_info = qr_data.split('|')
+                
+                if len(citizen_info) >= 7:
+                    st.success("QR code detected and processed successfully!")
                     
-                    # Process QR detection results
-                    if st.session_state.video_processor and hasattr(st.session_state.video_processor, 'qr_detected') and st.session_state.video_processor.qr_detected:
-                        process_qr_detection(st.session_state.video_processor.qr_data)
-                else:
-                    st.error("aiortc không khả dụng. Vui lòng sử dụng tùy chọn upload ảnh.")
-                        
-            except Exception as e:
-                st.error(f"Lỗi camera: {str(e)}")
-                st.info("Vui lòng thử sử dụng tùy chọn 'Chụp ảnh từ camera' hoặc 'Upload Ảnh'")
-        
-        else:
-            # Alternative camera capture method
-            if st.button("Chụp ảnh từ camera", key="capture_camera"):
-                st.info("Chức năng này đang được phát triển. Vui lòng sử dụng tùy chọn upload ảnh.")
+                    # Lu01b0u thu00f4ng tin vu00e0o DataFrame
+                    new_data = {
+                        'id': citizen_info[0],
+                        'cccd': citizen_info[1],
+                        'name': citizen_info[2],
+                        'dob': citizen_info[3],
+                        'sex': citizen_info[4],
+                        'address': citizen_info[5],
+                        'expdate': citizen_info[6],
+                        'scan_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        'image_path': "camera_capture"
+                    }
+                    
+                    st.session_state.citizens_data = pd.concat([
+                        st.session_state.citizens_data,
+                        pd.DataFrame([new_data])
+                    ], ignore_index=True)
+                    
+                    # Hiu1ec3n thu1ecb thu00f4ng tin
+                    st.markdown("""
+                    <div style="background-color: #e8f5e9; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                        <h4 style="color: #2e7d32;">Thông tin công dân:</h4>
+                    """, unsafe_allow_html=True)
+                    
+                    st.write(f"**ID:** {citizen_info[0]}")
+                    st.write(f"**Số CCCD:** {citizen_info[1]}")
+                    st.write(f"**Họ và tên:** {citizen_info[2]}")
+                    st.write(f"**Ngày sinh:** {citizen_info[3]}")
+                    st.write(f"**Giới tính:** {citizen_info[4]}")
+                    st.write(f"**Địa chỉ:** {citizen_info[5]}")
+                    st.write(f"**Ngày hết hạn:** {citizen_info[6]}")
 
-def process_qr_detection(qr_data):
-    """Process detected QR code data"""
-    try:
-        citizen_info = qr_data.split('|')
-        
-        if len(citizen_info) >= 7:
-            st.success("✅ QR code đã được phát hiện và xử lý thành công!")
-            
-            # Save information to DataFrame
-            new_data = {
-                'id': citizen_info[0],
-                'cccd': citizen_info[1],
-                'name': citizen_info[2],
-                'dob': citizen_info[3],
-                'sex': citizen_info[4],
-                'address': citizen_info[5],
-                'expdate': citizen_info[6],
-                'scan_date': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                'image_path': "camera_capture"
-            }
-            
-            st.session_state.citizens_data = pd.concat([
-                st.session_state.citizens_data,
-                pd.DataFrame([new_data])
-            ], ignore_index=True)
-            
-            # Display citizen information
-            display_citizen_info(citizen_info)
-            
-    except Exception as e:
-        st.error(f"Lỗi xử lý QR code: {str(e)}")
-
-def display_citizen_info(citizen_info):
-    """Display citizen information in a formatted way"""
-    st.markdown("""
-    <div style="background-color: #e8f5e9; padding: 20px; border-radius: 10px; margin-top: 20px;">
-    <h4 style="color: #2e7d32;">Thông tin công dân:</h4>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.write(f"**ID:** {citizen_info[0]}")
-        st.write(f"**Số CCCD:** {citizen_info[1]}")
-        st.write(f"**Họ và tên:** {citizen_info[2]}")
-        st.write(f"**Ngày sinh:** {citizen_info[3]}")
-    
-    with col2:
-        st.write(f"**Giới tính:** {citizen_info[4]}")
-        st.write(f"**Địa chỉ:** {citizen_info[5]}")
-        st.write(f"**Ngày hết hạn:** {citizen_info[6]}")
-
-# Add this to the top of your main() function
-def reset_session_on_error():
-    """Reset session state if there are WebRTC errors"""
-    if 'aiortc_error_count' not in st.session_state:
-        st.session_state.aiortc_error_count = 0
-    
-    if st.session_state.aiortc_error_count > 3:
-        st.warning("Phát hiện nhiều lỗi aiortc. Đang reset session...")
-        for key in list(st.session_state.keys()):
-            if 'aiortc' in key.lower() or 'peer' in key.lower():
-                del st.session_state[key]
-        st.session_state.aiortc_error_count = 0
-        st.rerun()
 
 def show_citizen_data():
     st.markdown("<h2 style='text-align: center;'>Dữ liệu Công dân</h2>", unsafe_allow_html=True)
@@ -696,7 +625,7 @@ def show_citizen_data():
 def show_homepage():
     st.markdown("<h1 style='text-align: center;'>Hệ thống Quản lý Công dân</h1>", unsafe_allow_html=True)
     
-    # Grid layout cho các chức năng
+    # Grid layout cho cu00e1c chu1ee9c nu0103ng
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -711,7 +640,7 @@ def show_homepage():
         if st.button("Quét QR CCCD"):
             st.session_state.page = "scan_qr"
             st.session_state.menu_choice = "Quét QR CCCD"
-            st.rerun()
+            st.experimental_rerun()
         
     with col2:
         st.markdown("""
@@ -725,7 +654,9 @@ def show_homepage():
         if st.button("Xem dữ liệu công dân"):
             st.session_state.page = "view_data"
             st.session_state.menu_choice = "Xem dữ liệu"
-            st.rerun()
+            st.experimental_rerun()
+            #show_citizen_data()
+          #  st.experimental_rerun()
         
     with col3:
         st.markdown("""
@@ -735,13 +666,14 @@ def show_homepage():
         </div>
         """, unsafe_allow_html=True)
         
-        # Nút kết nối với chức năng camera giám sát
+        # Nu00fat ku1ebft nu1ed1i vu1edbi chu1ee9c nu0103ng camera giu00e1m su00e1t
         if st.button("Camera giám sát"):
             st.session_state.page = "camera"
             st.session_state.menu_choice = "Camera Giám sát"
-            st.rerun()
+           # surveillance_camera()
+         #   st.experimental_rerun()
     
-    # Kiểm tra nếu có chuyển trang từ các nút
+    # Kiu1ec3m tra nu1ebfu cu00f3 chuyu1ec3n trang tu1eeb cu00e1c nu00fat
     if 'page' in st.session_state:
         if st.session_state.page == "scan_qr":
             scan_qr_code()
@@ -756,25 +688,25 @@ def show_homepage():
 def show_statistics():
     st.markdown("<h2 style='text-align: center;'>Thống kê</h2>", unsafe_allow_html=True)
     st.write("Hiển thị các số liệu thống kê liên quan đến công dân.")
-    # Thêm code hiển thị thống kê
+    # Thu00eam code hiu1ec3n thu1ecb thu1ed1ng ku00ea
 
 def show_settings():
     st.markdown("<h2 style='text-align: center;'>Cài đặt</h2>", unsafe_allow_html=True)
     st.write("Tùy chỉnh các thiết lập của hệ thống tại đây.")
-    # Thêm code cài đặt
+    # Thu00eam code cu00e0i u0111u1eb7t
 
 
 def main():
-    # Kiểm tra đăng nhập
+    # Kiu1ec3m tra u0111u0103ng nhu1eadp
     if not st.session_state.logged_in:
         login_page()
         return
     
-    # Hiển thị giao diện chính sau khi đăng nhập
+    # Hiu1ec3n thu1ecb giao diu1ec7n chu00ednh sau khi u0111u0103ng nhu1eadp
     st.sidebar.markdown("<h1 style='text-align: center;'>Chào mừng 📷</h1>", unsafe_allow_html=True)
     st.sidebar.markdown("<h2 style='text-align: center;'>Quản lý Công dân</h2>", unsafe_allow_html=True)
     
-    # Hiển thị thông tin người dùng đăng nhập
+    # Hiu1ec3n thu1ecb thu00f4ng tin ngu01b0u1eddi du00f9ng u0111u0103ng nhu1eadp
     st.sidebar.markdown(f"""<div style='text-align: center; padding: 10px; background-color: #e8f5e9; 
                         border-radius: 5px; margin-bottom: 20px;'>
                          <b>{st.session_state.username}</b></div>""", 
@@ -796,31 +728,31 @@ def main():
         key="main_menu"
     )
     
-    # Hiển thị các nút chức năng phụ trong sidebar
+    # Hiu1ec3n thu1ecb cu00e1c nu00fat chu1ee9c nu0103ng phu1ee5 trong sidebar
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Chức năng nhanh")
     
     if st.sidebar.button("📷 Camera"):
         st.session_state.page = "camera"
         st.session_state.menu_choice = "Camera Giám sát"
-        st.rerun()
+        st.experimental_rerun()
       
     if st.sidebar.button("📊 Báo cáo"):
         st.session_state.page = "reports"
         st.session_state.menu_choice = "Thống kê"
-        st.rerun()
+        st.experimental_rerun()
         
     if st.sidebar.button("⚙️ Cài đặt"):
         st.session_state.page = "settings"
+        #show_settings()
         st.session_state.menu_choice = "Cài đặt"
-        st.rerun()
+       # st.experimental_rerun()
     
-    # Nút đăng xuất
+    # Nu00fat u0111u0103ng xuu1ea5t
     if st.sidebar.button("🚪 Đăng xuất"):
         st.session_state.logged_in = False
         st.session_state.username = ""
-        st.rerun()
-
+        st.experimental_rerun()
     if choice == "Trang chủ":
         show_homepage()
     elif choice == "Quét QR CCCD":
@@ -833,6 +765,9 @@ def main():
         show_statistics()
     elif choice == "Cài đặt":
         show_settings()
+    # Xu1eed lu00fd cu00e1c trang
+    
+
 
 if __name__ == '__main__':
     main()
