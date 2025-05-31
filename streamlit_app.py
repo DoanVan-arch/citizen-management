@@ -556,18 +556,21 @@ def main():
     st.sidebar.markdown("### Chức năng nhanh")
     
     if st.sidebar.button("📷 Camera"):
-     #   st.session_state.page = "camera"
+        st.session_state.page = "camera"
         surveillance_camera()
+        choice = "Camera Giám sát"
       #  st.experimental_rerun()
-        
+      
     if st.sidebar.button("📊 Báo cáo"):
-     #   st.session_state.page = "reports"
+        st.session_state.page = "reports"
         show_statistics()
+        choice = "Thống kê"
      #   st.experimental_rerun()
         
     if st.sidebar.button("⚙️ Cài đặt"):
-     #   st.session_state.page = "settings"
+        st.session_state.page = "settings"
         show_settings()
+        choice = "Cài đặt"
      #   st.experimental_rerun()
     
     # Nu00fat u0111u0103ng xuu1ea5t
