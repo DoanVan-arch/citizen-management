@@ -13,6 +13,8 @@ import tempfile
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
 from facenet_pytorch import MTCNN, InceptionResnetV1
+import torch
+
 # Thêm try-except cho import asyncio để xử lý lỗi liên quan đến asyncio
 try:
     import asyncio
