@@ -838,7 +838,7 @@ def scan_qr_code():
                         else:
                             st.error("Không tìm thấy mã QR trong ảnh. Vui lòng thử lại.")
     with tab3:
-        st.header("Giới thiệu về công nghệ")
+        
         st.markdown("""
         ### MTCNN (Multi-task Cascaded Convolutional Networks)
         
