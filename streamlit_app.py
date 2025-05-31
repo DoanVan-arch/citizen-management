@@ -168,14 +168,52 @@ def surveillance_camera():
             <p>Theo dõi và phát hiện đối tượng qua camera</p>
         </div>
         """, unsafe_allow_html=True)
-        
+        # d:\Codes\citizen-management\streamlit_app.py
+
+# Thay thế cấu hình RTC hiện tại
+        RTC_CONFIGURATION = RTCConfiguration({
+            "iceServers": [
+                {"urls": ["stun:stun.l.google.com:19302"]},
+                {"urls": ["stun:stun1.l.google.com:19302"]},
+                {"urls": ["stun:stun2.l.google.com:19302"]},
+                {"urls": ["stun:stun3.l.google.com:19302"]},
+                {"urls": ["stun:stun4.l.google.com:19302"]},
+                # Thêm TURN server miễn phí (tùy chọn)
+                {
+                    "urls": ["turn:openrelay.metered.ca:80"],
+                    "username": "openrelayproject",
+                    "credential": "openrelayproject"
+                }
+            ]
+        })
         # Camera stream vu1edbi object detection
-        webrtc_ctx = webrtc_streamer(
-            key="surveillance",
-            video_transformer_factory=ObjectDetectionTransformer,
-            rtc_configuration=RTC_CONFIGURATION,
-            media_stream_constraints={"video": True, "audio": False},
-        )
+        try:
+            webrtc_ctx = webrtc_streamer(
+                key="surveillance",
+                video_transformer_factory=ObjectDetectionTransformer,
+                rtc_configuration=RTC_CONFIGURATION,
+                media_stream_constraints={
+                    "video": {
+                        "width": {"min": 640, "ideal": 1280, "max": 1920},
+                        "height": {"min": 480, "ideal": 720, "max": 1080},
+                        "frameRate": {"min": 15, "ideal": 30, "max": 60}
+                    }, 
+                    "audio": False
+                },
+                async_processing=True,  # Thêm xử lý bất đồng bộ
+            )
+            
+            # Hiển thị trạng thái kết nối
+            if webrtc_ctx.state.playing:
+                st.success("✅ Camera đang hoạt động")
+            elif webrtc_ctx.state.signalling:
+                st.warning("🔄 Đang kết nối camera...")
+            else:
+                st.error("❌ Camera chưa kết nối")
+            
+        except Exception as e:
+            st.error(f"Lỗi kết nối camera: {str(e)}")
+            st.info("Vui lòng thử lại hoặc kiểm tra cài đặt camera")
 
 
     with col2:
@@ -504,6 +542,7 @@ def show_homepage():
         # Nu00fat ku1ebft nu1ed1i vu1edbi chu1ee9c nu0103ng camera giu00e1m su00e1t
         if st.button("Camera giám sát"):
             st.session_state.page = "camera"
+            st.session_state.menu_choice = "Camera Giám sát"
            # surveillance_camera()
          #   st.experimental_rerun()
     
