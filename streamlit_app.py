@@ -1,3 +1,4 @@
+from operator import truediv
 import streamlit as st
 import cv2
 import numpy as np
@@ -11,17 +12,21 @@ import av
 # d:\Codes\citizen-management\streamlit_app.py
 
 
-import asyncio
-import threading
+# Thêm try-except cho import asyncio để xử lý lỗi liên quan đến asyncio
+try:
+    import asyncio
+    import threading
+except ImportError:
+    st.error("Không thể import asyncio. Một số chức năng có thể không hoạt động.")
 
-# Cập nhật import cho streamlit-webrtc
+# Cu1eadp nhu1eadt import cho streamlit-webrtc
 try:
     from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
     import av
     WEBRTC_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     WEBRTC_AVAILABLE = False
-    st.warning("streamlit-webrtc không khả dụng. Chỉ sử dụng chức năng upload ảnh.")
+    st.warning(f"streamlit-webrtc khu00f4ng khu1ea3 du1ee5ng: {str(e)}. Chu1ec9 su1eed du1ee5ng chu1ee9c nu0103ng upload u1ea3nh.")
 # Thiu1ebft lu1eadp giao diu1ec7n trang
 st.set_page_config(
     page_title="HỆ THỐNG QUẢN LÝ CÔNG DÂN",
@@ -149,6 +154,10 @@ def safe_webrtc_streamer(**kwargs):
         if not WEBRTC_AVAILABLE:
             st.error("WebRTC không khả dụng. Vui lòng sử dụng chức năng upload ảnh.")
             return None
+        
+        # Đảm bảo async_processing=False để tránh lỗi với asyncio
+        if 'async_processing' in kwargs:
+            kwargs['async_processing'] = False
             
         return webrtc_streamer(**kwargs)
     except Exception as e:
@@ -207,7 +216,7 @@ def surveillance_camera():
                     "video":True, 
                     "audio": False
                 },
-                async_processing=False,  # Tắt xử lý bất đồng bộ để đơn giản hóa
+                async_processing=False,  # Tắt xử lý bất đồng bộ để tránh lỗi
             )
             
             # Hiển thị trạng thái kết nối
@@ -337,9 +346,13 @@ def process_image_for_qr(image):
     except Exception as e:
         return False, f"Lỗi: {str(e)}"
 
-# Thu00eam vu00e0o u0111u1ea7u file
+# Cấu hình RTC với nhiều STUN servers để tăng độ tin cậy
 RTC_CONFIGURATION = RTCConfiguration(
-    {"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]}
+    {"iceServers": [
+        {"urls": ["stun:stun.l.google.com:19302"]},
+        {"urls": ["stun:stun1.l.google.com:19302"]},
+        {"urls": ["stun:stun2.l.google.com:19302"]}
+    ]}
 )
 
 class QRCodeVideoTransformer(VideoProcessorBase):
@@ -347,7 +360,7 @@ class QRCodeVideoTransformer(VideoProcessorBase):
         self.qr_detected = False
         self.qr_data = None
 
-    def transform(self, frame):
+    def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
         
         # Xu1eed lu00fd QR code
@@ -431,7 +444,7 @@ def scan_qr_code():
             video_processor_factory=QRCodeVideoTransformer,
             rtc_configuration=RTC_CONFIGURATION,
             media_stream_constraints={"video": True, "audio": False},
-            async_processing=True,
+            async_processing=False,
         )
 
        # Trong hu00e0m transform cu1ee7a class QRCodeVideoTransformer, su1eeda phu1ea7n xu1eed lu00fd khi phu00e1t hiu1ec7n QR:
