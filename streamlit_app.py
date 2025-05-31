@@ -12,12 +12,7 @@ import av
 from contextlib import contextmanager  # Add this import
 # d:\Codes\citizen-management\streamlit_app.py
 
-try:
-    from streamlit_camera_input_live import camera_input_live
-    CAMERA_LIVE_AVAILABLE = True
-except ImportError:
-    CAMERA_LIVE_AVAILABLE = False
-    st.warning("streamlit-camera-input-live không khả dụng.")
+
 # Thêm try-except cho import asyncio để xử lý lỗi liên quan đến asyncio
 try:
     import asyncio
@@ -206,6 +201,7 @@ if WEBRTC_AVAILABLE:
     RTC_CONFIGURATION = RTCConfiguration({
         "iceServers": [
             {"urls": ["stun:stun.l.google.com:19302"]}
+
            
         ],
         "iceTransportPolicy": "all",
