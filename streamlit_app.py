@@ -586,6 +586,12 @@ class FlipVideoProcessor(VideoProcessor):
         return av.VideoFrame.from_ndarray(flipped, format="bgr24")
 rtc_configuration = RTCConfiguration({
             "iceServers": [
+                {"urls": ["stun:stun2.l.google.com:19302"]},
+                {"urls": ["stun:stun3.l.google.com:19302"]},
+                {"urls": ["stun:stun4.l.google.com:19302"]},
+                {"urls": ["stun:stun.services.mozilla.com:3478"]},
+                {"urls": ["stun:stun5.l.google.com:19302"]},
+                {"urls": ["stun:stun.cloudflare.com:3478"]},
                 {"urls": ["stun:stun.l.google.com:19302"]},
                 {"urls": ["stun:stun1.l.google.com:19302"]},
             ]
@@ -620,8 +626,8 @@ def surveillance_camera():
                     webrtc_ctx = webrtc_streamer(
                     key="camera-stream",
                     mode=WebRtcMode.SENDRECV,
-                    rtc_configuration=rtc_config,
-                    video_processor_factory=lambda: ObjectDetectionTransformer,
+                    rtc_configuration=rtc_configuration,
+                    video_processor_factory=ObjectDetectionTransformer,
                     media_stream_constraints={
                         "video": {
                     "width": {"min": 320, "ideal": 640, "max": 1280},
