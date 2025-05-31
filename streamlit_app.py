@@ -156,6 +156,7 @@ def setup_asyncio():
             asyncio.set_event_loop(asyncio.new_event_loop())
     except RuntimeError:
         asyncio.set_event_loop(asyncio.new_event_loop())
+@contextmanager
 def webrtc_context():
     """Context manager for WebRTC operations"""
     try:
@@ -195,14 +196,18 @@ def safe_webrtc_streamer(**kwargs):
         return None
 
 # Update RTC Configuration with more reliable settings
-RTC_CONFIGURATION = RTCConfiguration({
-    "iceServers": [
-        {"urls": ["stun:stun.l.google.com:19302"]},
-        {"urls": ["stun:stun1.l.google.com:19302"]},
-    ],
-    "iceTransportPolicy": "all",
-    "bundlePolicy": "balanced"
-})
+if WEBRTC_AVAILABLE:
+    RTC_CONFIGURATION = RTCConfiguration({
+        "iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]},
+            {"urls": ["stun:stun1.l.google.com:19302"]},
+        ],
+        "iceTransportPolicy": "all",
+        "bundlePolicy": "balanced"
+    })
+else:
+    RTC_CONFIGURATION = None
+
 def login_page():
     st.markdown("<h1 style='text-align: center;'>Đăng nhập Hệ thống</h1>", unsafe_allow_html=True)
     
