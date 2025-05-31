@@ -585,7 +585,7 @@ class FlipVideoProcessor(VideoProcessor):
         flipped = img[::-1,:,:]
         return av.VideoFrame.from_ndarray(flipped, format="bgr24")
 rtc_configuration = RTCConfiguration({
-            iceServers: [
+            "iceServers": [
       {
         urls: "stun:stun.relay.metered.ca:80",
       },
@@ -610,6 +610,13 @@ rtc_configuration = RTCConfiguration({
         credential: "iZIL4le+gfyxiauH",
       },
   ],
+        "iceTransportPolicy": "all",  # Use both STUN and TURN
+        "bundlePolicy": "max-bundle",
+        "rtcpMuxPolicy": "require",
+        "iceCandidatePoolSize": 20,  # Increase candidate pool
+        "iceConnectionTimeout": 45000,  # 45 seconds timeout
+        "iceGatheringTimeout": 20000,   # 20 seconds gathering
+        "continualGatheringPolicy": "gather_continually"  # Keep gathering
         })
 def get_ice_connection_fix_config():
     """Get RTC configuration specifically designed to fix ICE connection issues"""
@@ -694,14 +701,13 @@ def surveillance_camera():
         if camera_option == "Camera trực tiếp (aiortc)":
             try:
                 if AIORTC_AVAILABLE:
-                    safe_rtc = SafeRTCConfiguration()
-                    rtc_config = rtc_configuration 
+                    
                     # Sử dụng aiortc
                     processor = FlipVideoProcessor()
                     webrtc_ctx = webrtc_streamer(
                     key="camera-stream",
                     mode=WebRtcMode.SENDRECV,
-                    rtc_configuration=rtc_config,
+                    rtc_configuration=rtc_configuration,
                     video_processor_factory=ObjectDetectionTransformer,
                     video_frame_callback=video_frame_callback,
                     media_stream_constraints={
