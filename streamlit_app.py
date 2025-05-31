@@ -469,8 +469,8 @@ class FlipVideoProcessor(VideoProcessor):
         return av.VideoFrame.from_ndarray(flipped, format="bgr24")
 rtc_configuration = RTCConfiguration({
             "iceServers": [
-                {"urls": ["stun:stun.l.google.com:19302"]}
-               
+                {"urls": ["stun:stun.l.google.com:19302"]},
+                {"urls": ["stun:stun1.l.google.com:19302"]},
             ]
         })
 def surveillance_camera():
@@ -507,7 +507,7 @@ def surveillance_camera():
                         "video": True,
                         "audio": False
                     },
-                    async_processing=True,
+                    async_processing=False,
                     sendback_audio=False,
                 )
                     
