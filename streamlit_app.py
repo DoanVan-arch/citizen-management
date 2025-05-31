@@ -585,16 +585,31 @@ class FlipVideoProcessor(VideoProcessor):
         flipped = img[::-1,:,:]
         return av.VideoFrame.from_ndarray(flipped, format="bgr24")
 rtc_configuration = RTCConfiguration({
-            "iceServers": [
-                {"urls": ["stun:stun2.l.google.com:19302"]},
-                {"urls": ["stun:stun3.l.google.com:19302"]},
-                {"urls": ["stun:stun4.l.google.com:19302"]},
-                {"urls": ["stun:stun.services.mozilla.com:3478"]},
-                {"urls": ["stun:stun5.l.google.com:19302"]},
-                {"urls": ["stun:stun.cloudflare.com:3478"]},
-                {"urls": ["stun:stun.l.google.com:19302"]},
-                {"urls": ["stun:stun1.l.google.com:19302"]},
-            ]
+            iceServers: [
+      {
+        urls: "stun:stun.relay.metered.ca:80",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80",
+        username: "572fe221e61111ed9e7ad83e",
+        credential: "iZIL4le+gfyxiauH",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:80?transport=tcp",
+        username: "572fe221e61111ed9e7ad83e",
+        credential: "iZIL4le+gfyxiauH",
+      },
+      {
+        urls: "turn:global.relay.metered.ca:443",
+        username: "572fe221e61111ed9e7ad83e",
+        credential: "iZIL4le+gfyxiauH",
+      },
+      {
+        urls: "turns:global.relay.metered.ca:443?transport=tcp",
+        username: "572fe221e61111ed9e7ad83e",
+        credential: "iZIL4le+gfyxiauH",
+      },
+  ],
         })
 def get_ice_connection_fix_config():
     """Get RTC configuration specifically designed to fix ICE connection issues"""
@@ -680,13 +695,13 @@ def surveillance_camera():
             try:
                 if AIORTC_AVAILABLE:
                     safe_rtc = SafeRTCConfiguration()
-                    rtc_config = safe_rtc.get_safe_rtc_config() 
+                    rtc_config = rtc_configuration 
                     # Sử dụng aiortc
                     processor = FlipVideoProcessor()
                     webrtc_ctx = webrtc_streamer(
                     key="camera-stream",
                     mode=WebRtcMode.SENDRECV,
-                    rtc_configuration=get_ice_connection_fix_config(),
+                    rtc_configuration=rtc_config,
                     video_processor_factory=ObjectDetectionTransformer,
                     video_frame_callback=video_frame_callback,
                     media_stream_constraints={
