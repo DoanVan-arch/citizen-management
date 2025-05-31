@@ -12,6 +12,7 @@ from contextlib import contextmanager
 import tempfile
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
 from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
+from facenet_pytorch import MTCNN, InceptionResnetV1
 # Thêm try-except cho import asyncio để xử lý lỗi liên quan đến asyncio
 try:
     import asyncio
@@ -43,12 +44,66 @@ if AIORTC_AVAILABLE:
 peer_connections = {}
 videoframes = {}
 class ObjectDetectionTransformer(VideoProcessorBase):
+    def __init__(self):
+        # Khởi tạo MTCNN cho phát hiện khuôn mặt
+        self.mtcnn = MTCNN(
+            image_size=160, 
+            margin=20, 
+            min_face_size=20,
+            thresholds=[0.6, 0.7, 0.7],  # Ngưỡng phát hiện ba bước
+            factor=0.709, 
+            post_process=True,
+            device='cuda' if torch.cuda.is_available() else 'cpu'
+        )
+        
+        # Khởi tạo FaceNet model (tùy chọn nếu bạn muốn nhận dạng khuôn mặt)
+        self.facenet = InceptionResnetV1(pretrained='vggface2').eval()
+        if torch.cuda.is_available():
+            self.facenet = self.facenet.cuda()
+            
+        # Biến để lưu trữ embedding khuôn mặt (tùy chọn)
+        self.known_face_embeddings = []
+        self.known_face_names = []
+
     def recv(self, frame):
-       
         img = frame.to_ndarray(format="bgr24")
         
-        # Thu00eam logic phu00e1t hiu1ec7n u0111u1ed1i tu01b0u1ee3ng u1edf u0111u00e2y
-        # (Cu00f3 thu1ec3 su1eed du1ee5ng OpenCV, YOLO, hou1eb7c cu00e1c model khu00e1c)
+        # Chuyển đổi từ BGR sang RGB (MTCNN sử dụng RGB)
+        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
+        # Phát hiện khuôn mặt bằng MTCNN
+        boxes, probs, landmarks = self.mtcnn.detect(rgb_img, landmarks=True)
+        
+        # Vẽ các khuôn mặt được phát hiện
+        if boxes is not None:
+            for i, (box, landmark) in enumerate(zip(boxes, landmarks)):
+                # Lấy tọa độ khuôn mặt
+                x1, y1, x2, y2 = [int(p) for p in box]
+                
+                # Vẽ hình chữ nhật xung quanh khuôn mặt
+                cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                
+                # Vẽ các điểm landmark (mắt, mũi, miệng)
+                for p in landmark:
+                    cv2.circle(img, (int(p[0]), int(p[1])), 2, (0, 0, 255), -1)
+                
+                # Hiển thị xác suất phát hiện
+                confidence = f"Confidence: {probs[i]:.2f}"
+                cv2.putText(img, confidence, (x1, y1-10), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                
+                # Tùy chọn: Trích xuất embedding khuôn mặt (nếu bạn muốn nhận dạng)
+                # face = self.mtcnn(rgb_img[y1:y2, x1:x2])
+                # if face is not None:
+                #     with torch.no_grad():
+                #         embedding = self.facenet(face.unsqueeze(0))
+                #         # Ở đây bạn có thể so sánh embedding với các khuôn mặt đã biết
+        
+        # Hiển thị số lượng khuôn mặt được phát hiện
+        if boxes is not None:
+            face_count = len(boxes)
+            cv2.putText(img, f"Faces: {face_count}", (10, 30), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
@@ -242,7 +297,7 @@ def surveillance_camera():
                     mode=WebRtcMode.SENDRECV,
                     rtc_configuration={"iceServers": ice_servers},
                     video_processor_factory=ObjectDetectionTransformer,
-                    video_frame_callback=video_frame_callback,
+                    
                    media_stream_constraints = {
                     "video": {
                         "width": {"min": 1280, "ideal": 1920, "max": 3840},
