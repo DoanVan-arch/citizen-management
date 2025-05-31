@@ -623,7 +623,11 @@ def surveillance_camera():
                     rtc_configuration=rtc_config,
                     video_processor_factory=lambda: ObjectDetectionTransformer,
                     media_stream_constraints={
-                        "video": True,
+                        "video": {
+                    "width": {"min": 320, "ideal": 640, "max": 1280},
+                    "height": {"min": 240, "ideal": 480, "max": 720},
+                    "frameRate": {"min": 10, "ideal": 15, "max": 30}  # Lower FPS for stability
+                },
                         "audio": False
                     },
                     async_processing=False,
