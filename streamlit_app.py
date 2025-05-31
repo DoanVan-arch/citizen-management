@@ -42,6 +42,123 @@ if AIORTC_AVAILABLE:
 # Lưu trữ các kết nối peer
 peer_connections = {}
 videoframes = {}
+class SafeRTCConfiguration:
+    """Safe RTC configuration with error handling"""
+    
+    def __init__(self):
+        self.ice_servers = []
+        self.connection_timeout = 30
+        self.gathering_timeout = 10
+        self.retry_attempts = 3
+    
+    def get_safe_rtc_config(self) -> RTCConfiguration:
+        """Get RTC configuration with error handling"""
+        
+        # Basic STUN servers (always working)
+        safe_ice_servers = [
+            {"urls": ["stun:stun.l.google.com:19302"]},
+            {"urls": ["stun:stun1.l.google.com:19302"]},
+        ]
+        
+        # Test additional servers
+        additional_servers = [
+            {"urls": ["stun:stun2.l.google.com:19302"]},
+            {"urls": ["stun:stun3.l.google.com:19302"]},
+            {"urls": ["stun:stun4.l.google.com:19302"]},
+        ]
+        
+        for server in additional_servers:
+            if self._test_stun_server(server["urls"][0]):
+                safe_ice_servers.append(server)
+        
+        # Add TURN servers if available
+        turn_servers = self._get_working_turn_servers()
+        if turn_servers:
+            safe_ice_servers.extend(turn_servers)
+        
+        return RTCConfiguration({
+            "iceServers": safe_ice_servers,
+            "iceConnectionTimeout": self.connection_timeout,
+            "iceGatheringTimeout": self.gathering_timeout,
+            "bundlePolicy": "balanced",
+            "rtcpMuxPolicy": "require"
+        })
+    
+    def _test_stun_server(self, stun_url: str, timeout: float = 2.0) -> bool:
+        """Test if STUN server is reachable"""
+        try:
+            # Parse STUN URL
+            if not stun_url.startswith("stun:"):
+                return False
+            
+            host_port = stun_url[5:]  # Remove "stun:"
+            if ":" in host_port:
+                host, port = host_port.split(":", 1)
+                port = int(port)
+            else:
+                host = host_port
+                port = 3478
+            
+            # Test connection
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.settimeout(timeout)
+            
+            try:
+                sock.connect((host, port))
+                return True
+            except:
+                return False
+            finally:
+                sock.close()
+                
+        except Exception as e:
+            logger.warning(f"STUN server test failed for {stun_url}: {e}")
+            return False
+    
+    def _get_working_turn_servers(self) -> List[Dict]:
+        """Get working TURN servers"""
+        turn_servers = []
+        
+        try:
+            # Try Twilio TURN if configured
+            if hasattr(st.secrets, 'webrtc') and 'twilio_account_sid' in st.secrets.webrtc:
+                twilio_servers = self._get_twilio_turn_safe()
+                if twilio_servers:
+                    turn_servers.extend(twilio_servers)
+            
+            # Try other TURN providers
+            # Add your TURN server configurations here
+            
+        except Exception as e:
+            logger.warning(f"TURN server setup failed: {e}")
+        
+        return turn_servers
+    
+    def _get_twilio_turn_safe(self) -> List[Dict]:
+        """Safely get Twilio TURN servers"""
+        try:
+            import requests
+            
+            account_sid = st.secrets.webrtc.twilio_account_sid
+            auth_token = st.secrets.webrtc.twilio_auth_token
+            
+            url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Tokens.json"
+            
+            response = requests.post(
+                url, 
+                auth=(account_sid, auth_token),
+                timeout=5  # Short timeout
+            )
+            
+            if response.status_code == 201:
+                token_data = response.json()
+                return token_data.get("ice_servers", [])
+            
+        except Exception as e:
+            logger.warning(f"Twilio TURN failed: {e}")
+        
+        return []
+
 class ObjectDetectionTransformer(VideoProcessorBase):
     def recv(self, frame):
        
@@ -496,12 +613,14 @@ def surveillance_camera():
         if camera_option == "Camera trực tiếp (aiortc)":
             try:
                 if AIORTC_AVAILABLE:
+                    safe_rtc = SafeRTCConfiguration()
+                    rtc_config = safe_rtc.get_safe_rtc_config() 
                     # Sử dụng aiortc
                     processor = FlipVideoProcessor()
                     webrtc_ctx = webrtc_streamer(
                     key="camera-stream",
                     mode=WebRtcMode.SENDRECV,
-                    rtc_configuration=rtc_configuration,
+                    rtc_configuration=rtc_config,
                     video_processor_factory=lambda: ObjectDetectionTransformer,
                     media_stream_constraints={
                         "video": True,
