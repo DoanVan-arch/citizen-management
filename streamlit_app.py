@@ -494,7 +494,7 @@ def surveillance_camera():
                         "audio": False
                     },
                     async_processing=True,
-                    sendback_audio=enable_audio,
+                    sendback_audio=False,
                 )
                     
                     # Display connection status
