@@ -188,32 +188,29 @@ def surveillance_camera():
         })
         # Camera stream vu1edbi object detection
         try:
-            webrtc_ctx = webrtc_streamer(
-                key="surveillance",
-                video_transformer_factory=ObjectDetectionTransformer,
-                rtc_configuration=RTC_CONFIGURATION,
-                media_stream_constraints={
-                    "video": {
-                        "width": {"min": 640, "ideal": 1280, "max": 1920},
-                        "height": {"min": 480, "ideal": 720, "max": 1080},
-                        "frameRate": {"min": 15, "ideal": 30, "max": 60}
-                    }, 
-                    "audio": False
-                },
-                async_processing=True,  # Thêm xử lý bất đồng bộ
-            )
+            st.warning("Chế độ dự phòng - Chỉ hiển thị camera cục bộ")
             
-            # Hiển thị trạng thái kết nối
-            if webrtc_ctx.state.playing:
-                st.success("✅ Camera đang hoạt động")
-            elif webrtc_ctx.state.signalling:
-                st.warning("🔄 Đang kết nối camera...")
-            else:
-                st.error("❌ Camera chưa kết nối")
-            
+            if st.button("Bắt đầu camera OpenCV"):
+                camera = init_camera()
+                if camera:
+                    stframe = st.empty()
+                    
+                    # Hiển thị camera trong 10 giây
+                    import time
+                    start_time = time.time()
+                    
+                    while time.time() - start_time < 10:
+                        ret, frame = camera.read()
+                        if ret:
+                            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                            stframe.image(frame_rgb, channels="RGB", use_column_width=True)
+                        time.sleep(0.1)
+                    
+                    camera.release()
+                    st.success("Đã dừng camera")
         except Exception as e:
-            st.error(f"Lỗi kết nối camera: {str(e)}")
-            st.info("Vui lòng thử lại hoặc kiểm tra cài đặt camera")
+            st.error(f"Lỗi xảy ra: {str(e)}")
+
 
 
     with col2:
