@@ -360,7 +360,15 @@ ICE_SERVERS = [
 async def process_offer(offer, video_processor=None):
     #offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
     pc_id = str(uuid.uuid4())
-    pc = RTCPeerConnection()
+    import requests
+
+# Lấy thông tin TURN server từ API
+    response = requests.get(
+        "https://yourappname.metered.live/api/v1/turn/credentials",
+        params={"apiKey": "5b0cc93867e02c9b2e8ef46de385169008aa"}
+    )
+    ice_servers = response.json()
+    pc = RTCPeerConnection(ice_servers=ice_servers)
     peer_connections[pc_id] = pc
     
     relay = MediaRelay()
@@ -452,9 +460,17 @@ def create_webrtc_component(key, video_processor=None):
             const track = videoTracks[0];
             
             // Create peer connection
+            const response = 
+            await fetch("https://iewcom.metered.live/api/v1/turn/credentials?apiKey=5b0cc93867e02c9b2e8ef46de385169008aa");
+
+            // Saving the response in the iceServers array
+            const iceServers = await response.json();
+
+            // Using the iceServers array in the RTCPeerConnection method
             const pc = new RTCPeerConnection({
-                iceServers: [{urls: ['stun:stun.l.google.com:19302']}]
+            iceServers: iceServers
             });
+          
             
             // Add track to peer connection
             pc.addTrack(track, stream);
@@ -690,35 +706,11 @@ def surveillance_camera():
         if camera_option == "Camera trực tiếp (aiortc)":
             try:
                 if AIORTC_AVAILABLE:
-                    response = requests.get(
-                        "https://yourappname.metered.live/api/v1/turn/credentials",
-                        params={"apiKey": "5b0cc93867e02c9b2e8ef46de385169008aa"}
-                    )
-                    ice_servers = response.json()
-
-                    # Sử dụng trong webrtc_streamer
-                   
-                    # Sử dụng aiortc
                     processor = FlipVideoProcessor()
-                    webrtc_ctx = webrtc_streamer(
-                    key="camera-stream",
-                    mode=WebRtcMode.SENDRECV,
-                    rtc_configuration={"iceServers": ice_servers},
-                    video_processor_factory=ObjectDetectionTransformer,
-                    video_frame_callback=video_frame_callback,
-                    media_stream_constraints={
-                        "video": {
-                    "width": {"min": 320, "ideal": 640, "max": 1280},
-                    "height": {"min": 240, "ideal": 480, "max": 720},
-                    "frameRate": {"min": 10, "ideal": 15, "max": 30}  # Lower FPS for stability
-                },
-                        "audio": False
-                    },
-                    async_processing=False,
-                    sendback_audio=False,
-                )
+                    video_processor = create_webrtc_component("surveillance", processor)
                     
                     # Display connection status
+                   
                     if st.session_state.peer_connection_id:
                         st.success("✅ Camera đang hoạt động")
                     else:
