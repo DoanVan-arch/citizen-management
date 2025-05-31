@@ -704,7 +704,7 @@ def scan_qr_code():
     st.markdown("<h2 style='text-align: center;'>Quét mã QR CCCD</h2>", unsafe_allow_html=True)
     
     # Create tabs for different input methods
-    tab1, tab2 = st.tabs(["📁 Upload Ảnh", "📷 Camera WebRTC"])
+    tab1, tab2,tab3 = st.tabs(["📁 Upload Ảnh", "📷 Camera WebRTC"," Giới thiệu công nghệ"])
     
     with tab1:
         st.markdown("""
@@ -731,7 +731,6 @@ def scan_qr_code():
                         st.success(message)
                     else:
                         st.error(message)
-    
     with tab2:
         st.markdown("""
         <div class="info-card">
@@ -761,13 +760,13 @@ def scan_qr_code():
                     rtc_configuration={"iceServers": ice_servers},
                     video_processor_factory=QRCodeProcessor,
                     media_stream_constraints = {
-    "video": {
-        "width": {"min": 1280, "ideal": 1920, "max": 3840},
-        "height": {"min": 720, "ideal": 1080, "max": 2160},
-        "frameRate": {"min": 15, "ideal": 30, "max": 60}
-    },
-    "audio": False
-},
+                        "video": {
+                            "width": {"min": 1280, "ideal": 1920, "max": 3840},
+                            "height": {"min": 720, "ideal": 1080, "max": 2160},
+                            "frameRate": {"min": 15, "ideal": 30, "max": 60}
+                        },
+                        "audio": False
+                    },
 
                     async_processing=False,
                     sendback_audio=False,
