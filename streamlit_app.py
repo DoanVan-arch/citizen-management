@@ -550,7 +550,18 @@ def main():
     ]
     
     choice = st.sidebar.selectbox("Chọn chức năng", menu)
-    
+    if choice == "Trang chủ":
+        show_homepage()
+    elif choice == "Quét QR CCCD":
+        scan_qr_code()
+    elif choice == "Xem dữ liệu":
+        show_citizen_data()
+    elif choice == "Camera Giám sát":
+        surveillance_camera()
+    elif choice == "Thống kê":
+        show_statistics()
+    elif choice == "Cài đặt":
+        show_settings()
     # Hiu1ec3n thu1ecb cu00e1c nu00fat chu1ee9c nu0103ng phu1ee5 trong sidebar
     st.sidebar.markdown("---")
     st.sidebar.markdown("### Chức năng nhanh")
@@ -558,7 +569,7 @@ def main():
     if st.sidebar.button("📷 Camera"):
         st.session_state.page = "camera"
         surveillance_camera()
-        choice = "Camera Giám sát"
+       # choice.set = "Camera Giám sát"
       #  st.experimental_rerun()
       
     if st.sidebar.button("📊 Báo cáo"):
@@ -580,18 +591,7 @@ def main():
         st.experimental_rerun()
     
     # Xu1eed lu00fd cu00e1c trang
-    if choice == "Trang chủ":
-        show_homepage()
-    elif choice == "Quét QR CCCD":
-        scan_qr_code()
-    elif choice == "Xem dữ liệu":
-        show_citizen_data()
-    elif choice == "Camera Giám sát":
-        surveillance_camera()
-    elif choice == "Thống kê":
-        show_statistics()
-    elif choice == "Cài đặt":
-        show_settings()
+    
 
 
 if __name__ == '__main__':
