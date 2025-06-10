@@ -824,9 +824,7 @@ def surveillance_camera():
                             else:
                                 st.info("Không tìm thấy khuôn mặt nào trong video.")
                             
-                            # Hiển thị biểu đồ số lượng khuôn mặt theo frame
-                            if results.get("face_count_per_frame"):
-                                st.subheader("📈 Biểu đồ số lượng khuôn mặt theo thời gian")
+                            
                                 
                                 
                                 
