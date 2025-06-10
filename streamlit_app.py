@@ -15,6 +15,7 @@ from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfigurati
 from streamlit_webrtc import webrtc_streamer, WebRtcMode, RTCConfiguration
 from facenet_pytorch import MTCNN, InceptionResnetV1
 import torch
+import torch.nn.functional as F
 import time
 
 # Thêm try-except cho import asyncio để xử lý lỗi liên quan đến asyncio
@@ -60,14 +61,62 @@ class ObjectDetectionTransformer(VideoProcessorBase):
             device='cuda' if torch.cuda.is_available() else 'cpu'
         )
         
-        # Khởi tạo FaceNet model (tùy chọn nếu bạn muốn nhận dạng khuôn mặt)
+        # Khởi tạo FaceNet model
         self.facenet = InceptionResnetV1(pretrained='vggface2').eval()
         if torch.cuda.is_available():
             self.facenet = self.facenet.cuda()
             
-        # Biến để lưu trữ embedding khuôn mặt (tùy chọn)
+        # Biến để lưu trữ embedding khuôn mặt
         self.known_face_embeddings = []
         self.known_face_names = []
+        
+        # Ngưỡng để xác định khuôn mặt giống nhau
+        self.similarity_threshold = 0.6
+        
+        # Bộ đếm để tự động đặt tên cho khuôn mặt mới
+        self.face_counter = 1
+
+    def get_face_embedding(self, face_tensor):
+        """Trích xuất embedding từ tensor khuôn mặt"""
+        try:
+            with torch.no_grad():
+                if torch.cuda.is_available():
+                    face_tensor = face_tensor.cuda()
+                embedding = self.facenet(face_tensor.unsqueeze(0))
+                return F.normalize(embedding, p=2, dim=1)
+        except:
+            return None
+
+    def find_matching_face(self, new_embedding):
+        """Tìm khuôn mặt khớp trong danh sách đã biết"""
+        if len(self.known_face_embeddings) == 0:
+            return None, -1
+        
+        # Tính độ tương đồng với tất cả khuôn mặt đã biết
+        similarities = []
+        for known_embedding in self.known_face_embeddings:
+            similarity = F.cosine_similarity(new_embedding, known_embedding).item()
+            similarities.append(similarity)
+        
+        # Tìm độ tương đồng cao nhất
+        max_similarity = max(similarities)
+        max_index = similarities.index(max_similarity)
+        
+        # Kiểm tra xem có vượt ngưỡng không
+        if max_similarity > self.similarity_threshold:
+            return self.known_face_names[max_index], max_similarity
+        else:
+            return None, max_similarity
+
+    def add_new_face(self, embedding, name=None):
+        """Thêm khuôn mặt mới vào danh sách"""
+        if name is None:
+            name = f"Đối tượng {self.face_counter}"
+            self.face_counter += 1
+        
+        self.known_face_embeddings.append(embedding)
+        self.known_face_names.append(name)
+        print(f"Đã thêm khuôn mặt mới: {name}")
 
     def recv(self, frame):
         img = frame.to_ndarray(format="bgr24")
@@ -91,25 +140,69 @@ class ObjectDetectionTransformer(VideoProcessorBase):
                 for p in landmark:
                     cv2.circle(img, (int(p[0]), int(p[1])), 2, (0, 0, 255), -1)
                 
-                # Hiển thị xác suất phát hiện
-                confidence = f"Sắc xuất: {probs[i]:.2f}"
-                cv2.putText(img, confidence, (x1, y1-10), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                # Trích xuất và xử lý khuôn mặt
+                try:
+                    # Cắt vùng khuôn mặt từ ảnh RGB
+                    face_img = rgb_img[max(0, y1):min(rgb_img.shape[0], y2), 
+                                     max(0, x1):min(rgb_img.shape[1], x2)]
+                    
+                    # Sử dụng MTCNN để chuẩn hóa khuôn mặt
+                    face_tensor = self.mtcnn(face_img)
+                    
+                    if face_tensor is not None:
+                        # Trích xuất embedding
+                        embedding = self.get_face_embedding(face_tensor)
+                        
+                        if embedding is not None:
+                            # Tìm khuôn mặt khớp
+                            matched_name, similarity = self.find_matching_face(embedding)
+                            
+                            if matched_name:
+                                # Khuôn mặt đã biết
+                                label = f"{matched_name} ({similarity:.2f})"
+                                color = (0, 255, 0)  # Xanh lá cho khuôn mặt đã biết
+                            else:
+                                # Khuôn mặt mới - thêm vào danh sách
+                                self.add_new_face(embedding)
+                                label = f"Người {self.face_counter - 1} (Mới)"
+                                color = (0, 0, 255)  # Đỏ cho khuôn mặt mới
+                            
+                            # Hiển thị tên/nhãn
+                            cv2.putText(img, label, (x1, y1-30), 
+                                      cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
                 
-                # Tùy chọn: Trích xuất embedding khuôn mặt (nếu bạn muốn nhận dạng)
-                # face = self.mtcnn(rgb_img[y1:y2, x1:x2])
-                # if face is not None:
-                #     with torch.no_grad():
-                #         embedding = self.facenet(face.unsqueeze(0))
-                #         # Ở đây bạn có thể so sánh embedding với các khuôn mặt đã biết
+                except Exception as e:
+                    print(f"Lỗi xử lý khuôn mặt: {e}")
+                
+                # Hiển thị xác suất phát hiện
+                confidence = f"Độ tin cậy: {probs[i]:.2f}"
+                cv2.putText(img, confidence, (x1, y1-10), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
         
-        # Hiển thị số lượng khuôn mặt được phát hiện
+        # Hiển thị thống kê
         if boxes is not None:
             face_count = len(boxes)
-            cv2.putText(img, f"Số đối tượng: {face_count}", (10, 30), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            cv2.putText(img, f"Phát hiện: {face_count} | Đã biết: {len(self.known_face_embeddings)}", 
+                       (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        else:
+            cv2.putText(img, f"Phát hiện: 0 | Đã biết: {len(self.known_face_embeddings)}", 
+                       (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         
         return av.VideoFrame.from_ndarray(img, format="bgr24")
+
+    def get_known_faces_info(self):
+        """Trả về thông tin các khuôn mặt đã biết"""
+        return {
+            "total_faces": len(self.known_face_embeddings),
+            "face_names": self.known_face_names.copy()
+        }
+    
+    def clear_known_faces(self):
+        """Xóa tất cả khuôn mặt đã lưu"""
+        self.known_face_embeddings.clear()
+        self.known_face_names.clear()
+        self.face_counter = 1
+        print("Đã xóa tất cả khuôn mặt đã lưu")
 
 # CSS tùy chỉnh
 st.markdown("""
