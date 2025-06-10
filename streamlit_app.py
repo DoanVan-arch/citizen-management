@@ -50,12 +50,12 @@ peer_connections = {}
 videoframes = {}
 class ObjectDetectionTransformer(VideoProcessorBase):
     def __init__(self):
-        # Khởi tạo MTCNN cho phát hiện khuôn mặt
+        # Khởi tạo MTCNN cho Detect khuôn mặt
         self.mtcnn = MTCNN(
             image_size=160, 
             margin=20, 
             min_face_size=20,
-            thresholds=[0.6, 0.7, 0.7],  # Ngưỡng phát hiện ba bước
+            thresholds=[0.6, 0.7, 0.7],  # Ngưỡng Detect ba bước
             factor=0.709, 
             post_process=True,
             device='cuda' if torch.cuda.is_available() else 'cpu'
@@ -88,11 +88,11 @@ class ObjectDetectionTransformer(VideoProcessorBase):
             return None
 
     def find_matching_face(self, new_embedding):
-        """Tìm khuôn mặt khớp trong danh sách đã biết"""
+        """Tìm khuôn mặt khớp trong danh sách Knowed"""
         if len(self.known_face_embeddings) == 0:
             return None, -1
         
-        # Tính độ tương đồng với tất cả khuôn mặt đã biết
+        # Tính độ tương đồng với tất cả khuôn mặt Knowed
         similarities = []
         for known_embedding in self.known_face_embeddings:
             similarity = F.cosine_similarity(new_embedding, known_embedding).item()
@@ -124,10 +124,10 @@ class ObjectDetectionTransformer(VideoProcessorBase):
         # Chuyển đổi từ BGR sang RGB (MTCNN sử dụng RGB)
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
-        # Phát hiện khuôn mặt bằng MTCNN
+        # Detect khuôn mặt bằng MTCNN
         boxes, probs, landmarks = self.mtcnn.detect(rgb_img, landmarks=True)
         
-        # Vẽ các khuôn mặt được phát hiện
+        # Vẽ các khuôn mặt được Detect
         if boxes is not None:
             for i, (box, landmark) in enumerate(zip(boxes, landmarks)):
                 # Lấy tọa độ khuôn mặt
@@ -158,9 +158,9 @@ class ObjectDetectionTransformer(VideoProcessorBase):
                             matched_name, similarity = self.find_matching_face(embedding)
                             
                             if matched_name:
-                                # Khuôn mặt đã biết
+                                # Khuôn mặt Knowed
                                 label = f"{matched_name} ({similarity:.2f})"
-                                color = (0, 255, 0)  # Xanh lá cho khuôn mặt đã biết
+                                color = (0, 255, 0)  # Xanh lá cho khuôn mặt Knowed
                             else:
                                 # Khuôn mặt mới - thêm vào danh sách
                                 self.add_new_face(embedding)
@@ -174,7 +174,7 @@ class ObjectDetectionTransformer(VideoProcessorBase):
                 except Exception as e:
                     print(f"Lỗi xử lý khuôn mặt: {e}")
                 
-                # Hiển thị xác suất phát hiện
+                # Hiển thị xác suất Detect
                 confidence = f"Reliability: {probs[i]:.2f}"
                 cv2.putText(img, confidence, (x1, y1-10), 
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
@@ -191,7 +191,7 @@ class ObjectDetectionTransformer(VideoProcessorBase):
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
     def get_known_faces_info(self):
-        """Trả về thông tin các khuôn mặt đã biết"""
+        """Trả về thông tin các khuôn mặt Knowed"""
         return {
             "total_faces": len(self.known_face_embeddings),
             "face_names": self.known_face_names.copy()
@@ -328,7 +328,7 @@ USERS = {
 
 @st.cache_resource
 def load_face_models():
-    # Khởi tạo MTCNN cho phát hiện khuôn mặt
+    # Khởi tạo MTCNN cho Detect khuôn mặt
     mtcnn = MTCNN(
         image_size=160, 
         margin=20, 
@@ -346,7 +346,7 @@ def load_face_models():
         
     return mtcnn, facenet
 
-# Hàm phát hiện khuôn mặt trong ảnh
+# Hàm Detect khuôn mặt trong ảnh
 def detect_faces_in_image(image, mtcnn):
     # Chuyển đổi ảnh PIL sang numpy array nếu cần
     if isinstance(image, Image.Image):
@@ -358,12 +358,12 @@ def detect_faces_in_image(image, mtcnn):
     if img_array.shape[2] == 3 and not isinstance(image, Image.Image):
         img_array = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
     
-    # Phát hiện khuôn mặt
+    # Detect khuôn mặt
     boxes, probs, landmarks = mtcnn.detect(img_array, landmarks=True)
     
     return boxes, probs, landmarks, img_array
 
-# Hàm vẽ kết quả phát hiện lên ảnh
+# Hàm vẽ kết quả Detect lên ảnh
 def draw_faces_on_image(image, boxes, probs, landmarks):
     # Tạo bản sao để vẽ lên
     if isinstance(image, np.ndarray):
@@ -375,7 +375,7 @@ def draw_faces_on_image(image, boxes, probs, landmarks):
     
     draw = ImageDraw.Draw(result_image)
     
-    # Vẽ các khuôn mặt được phát hiện
+    # Vẽ các khuôn mặt được Detect
     if boxes is not None:
         for i, (box, landmark) in enumerate(zip(boxes, landmarks)):
             # Vẽ hình chữ nhật xung quanh khuôn mặt
@@ -398,7 +398,10 @@ def draw_faces_on_image(image, boxes, probs, landmarks):
         draw.text((10, 10), f"Số khuôn mặt: {face_count}", fill="green")
     
     return result_image
-
+ho_list = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Vũ", "Đặng", "Bùi", "Ngô", "Đinh"]
+ten_dem_list = ["Văn", "Thị", "Minh", "Hữu", "Đức", "Thanh", "Quang", "Anh"]
+ten_list = ["An", "Bình", "Cường", "Dung", "Em", "Phương", "Giang", "Hoa", "Inh", "Kim"]
+import random
 # Hàm xử lý video
 def process_video(video_path, mtcnn, output_path=None):
     cap = cv2.VideoCapture(video_path)
@@ -408,6 +411,18 @@ def process_video(video_path, mtcnn, output_path=None):
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = cap.get(cv2.CAP_PROP_FPS)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    
+    # Khởi tạo FaceNet model để trích xuất embedding
+    facenet = InceptionResnetV1(pretrained='vggface2').eval()
+    if torch.cuda.is_available():
+        facenet = facenet.cuda()
+    
+    # Biến lưu trữ khuôn mặt Knowed
+    known_face_embeddings = []
+    known_face_names = []
+    known_face_images = []
+    face_counter = 1
+    similarity_threshold = 0.6
     
     # Tạo video output nếu cần
     if output_path:
@@ -421,12 +436,72 @@ def process_video(video_path, mtcnn, output_path=None):
     frame_count = 0
     face_count_per_frame = []
     
+    def get_face_embedding(face_tensor):
+        """Trích xuất embedding từ tensor khuôn mặt"""
+        try:
+            with torch.no_grad():
+                if torch.cuda.is_available():
+                    face_tensor = face_tensor.cuda()
+                embedding = facenet(face_tensor.unsqueeze(0))
+                return F.normalize(embedding, p=2, dim=1)
+        except:
+            return None
+    
+    def find_matching_face(new_embedding):
+        """Tìm khuôn mặt khớp trong danh sách Knowed"""
+        if len(known_face_embeddings) == 0:
+            return None, -1
+        
+        # Tính độ tương đồng với tất cả khuôn mặt Knowed
+        similarities = []
+        for known_embedding in known_face_embeddings:
+            similarity = F.cosine_similarity(new_embedding, known_embedding).item()
+            similarities.append(similarity)
+        
+        # Tìm độ tương đồng cao nhất
+        max_similarity = max(similarities)
+        max_index = similarities.index(max_similarity)
+        
+        # Kiểm tra xem có vượt ngưỡng không
+        if max_similarity > similarity_threshold:
+            return known_face_names[max_index], max_similarity
+        else:
+            return None, max_similarity
+   
+
+    
+    face_counter += 1
+    def add_new_face(embedding,face_img, name=None):
+        """Thêm khuôn mặt mới vào danh sách"""
+        nonlocal face_counter
+        if name is None:
+            ho = random.choice(ho_list)
+            ten_dem = random.choice(ten_dem_list)
+            ten = random.choice(ten_list)
+            name = f"{ho} {ten_dem} {ten}"
+    
+    # Đảm bảo không trùng tên
+            while name in known_face_names:
+                ho = random.choice(ho_list)
+                ten_dem = random.choice(ten_dem_list)
+                ten = random.choice(ten_list)
+                name = f"{ho} {ten_dem} {ten}"
+        
+        known_face_embeddings.append(embedding)
+        known_face_names.append(name)
+        known_face_images.append(face_img)
+        print(f"Đã thêm khuôn mặt mới: {name}")
+        return name
+    
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
         
-        # Phát hiện khuôn mặt
+        # Chuyển đổi từ BGR sang RGB cho MTCNN
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        # Detect khuôn mặt
         boxes, probs, landmarks, _ = detect_faces_in_image(frame, mtcnn)
         
         # Lưu số lượng khuôn mặt
@@ -446,16 +521,58 @@ def process_video(video_path, mtcnn, output_path=None):
                 for p in landmark:
                     cv2.circle(frame, (int(p[0]), int(p[1])), 2, (0, 0, 255), -1)
                 
+                # Xử lý nhận diện khuôn mặt
+                try:
+                    # Cắt vùng khuôn mặt từ ảnh RGB
+                    face_img = rgb_frame[max(0, y1):min(rgb_frame.shape[0], y2), 
+                                       max(0, x1):min(rgb_frame.shape[1], x2)]
+                    
+                    # Sử dụng MTCNN để chuẩn hóa khuôn mặt
+                    face_tensor = mtcnn(face_img)
+                    
+                    if face_tensor is not None:
+                        # Trích xuất embedding
+                        embedding = get_face_embedding(face_tensor)
+                        
+                        if embedding is not None:
+                            # Tìm khuôn mặt khớp
+                            matched_name, similarity = find_matching_face(embedding)
+                            
+                            if matched_name:
+                                # Khuôn mặt Knowed
+                                label = f"{matched_name} ({similarity:.2f})"
+                                name_color = (0, 255, 0)  # Xanh lá cho khuôn mặt Knowed
+                            else:
+                                # Khuôn mặt mới - thêm vào danh sách
+                                new_name = add_new_face(embedding,face_img=face_img)
+                                label = f"{new_name} (New)"
+                                name_color = (0, 0, 255)  # Đỏ cho khuôn mặt mới
+                            
+                            # Hiển thị tên/nhãn
+                            cv2.putText(frame, label, (x1, y1-30), 
+                                      cv2.FONT_HERSHEY_SIMPLEX, 0.6, name_color, 2)
+                
+                except Exception as e:
+                    print(f"Lỗi xử lý khuôn mặt: {e}")
+                    # Hiển thị nhãn mặc định nếu có lỗi
+                    cv2.putText(frame, "Unknown", (x1, y1-30), 
+                              cv2.FONT_HERSHEY_SIMPLEX, 0.6, (128, 128, 128), 2)
+                
                 # Hiển thị độ tin cậy
                 confidence = f"Conf: {probs[i]:.2f}"
                 cv2.putText(frame, confidence, (x1, y1-10), 
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         
-        # Hiển thị số lượng khuôn mặt
+        # Hiển thị thống kê
         if boxes is not None:
             face_count = len(boxes)
-            cv2.putText(frame, f"Faces: {face_count}", (10, 30), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            stats_text = f"Detect: {face_count} | Knowed: {len(known_face_embeddings)}"
+            cv2.putText(frame, stats_text, (10, 30), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        else:
+            stats_text = f"Detect: 0 | Knowed: {len(known_face_embeddings)}"
+            cv2.putText(frame, stats_text, (10, 30), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         
         # Ghi frame vào video output nếu cần
         if output_path:
@@ -465,7 +582,7 @@ def process_video(video_path, mtcnn, output_path=None):
         frame_count += 1
         progress = int(frame_count / total_frames * 100)
         progress_bar.progress(progress / 100)
-        status_text.text(f"Đang xử lý: {progress}% ({frame_count}/{total_frames})")
+        status_text.text(f"Đang xử lý: {progress}% ({frame_count}/{total_frames}) - Đã nhận diện: {len(known_face_embeddings)} người")
     
     # Giải phóng tài nguyên
     cap.release()
@@ -476,11 +593,21 @@ def process_video(video_path, mtcnn, output_path=None):
     max_faces = max(face_count_per_frame) if face_count_per_frame else 0
     avg_faces = sum(face_count_per_frame) / len(face_count_per_frame) if face_count_per_frame else 0
     
+    # Hiển thị danh sách người đã nhận diện
+    st.success(f"Hoàn thành xử lý video!")
+    st.info(f"Đã nhận diện {len(known_face_embeddings)} người khác nhau:")
+    for i, name in enumerate(known_face_names, 1):
+        st.write(f"{i}. {name}")
+    
     return {
         "total_frames": frame_count,
         "max_faces": max_faces,
         "avg_faces": avg_faces,
-        "face_count_per_frame": face_count_per_frame
+        "face_count_per_frame": face_count_per_frame,
+        "known_faces": len(known_face_embeddings),
+        "known_face_names": known_face_names.copy(),
+        "known_face_embeddings": known_face_embeddings.copy(),
+        "known_face_images":known_face_images.copy()
     }
 def login_page():
     st.markdown("<h1 style='text-align: center;'>Đăng nhập Hệ thống</h1>", unsafe_allow_html=True)
@@ -520,7 +647,7 @@ def surveillance_camera():
         st.markdown("""
         <div class="info-card">
         <h3>Giám sát an ninh</h3>
-        <p>Theo dõi và phát hiện đối tượng qua camera</p>
+        <p>Theo dõi và Detect đối tượng qua camera</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -591,7 +718,7 @@ def surveillance_camera():
                     
                     if st.button("Phân tích ảnh"):
                         with st.spinner("Đang phân tích ảnh..."):
-                            # Phát hiện khuôn mặt
+                            # Detect khuôn mặt
                             boxes, probs, landmarks, img_array = detect_faces_in_image(image, mtcnn)
                             
                             # Vẽ kết quả
@@ -617,7 +744,7 @@ def surveillance_camera():
                                         # Hiển thị thông tin vị trí
                                         st.text(f"Vị trí: X1={x1}, Y1={y1}, X2={x2}, Y2={y2}")
                             else:
-                                st.warning("Không phát hiện khuôn mặt nào trong ảnh")
+                                st.warning("Không Detect khuôn mặt nào trong ảnh")
                 
                 else:  # Video file
                     st.video(uploaded_file)
@@ -638,26 +765,114 @@ def surveillance_camera():
                             # Hiển thị video đã xử lý
                             st.success("Phân tích hoàn tất!")
                             
-                            # Hiển thị thống kê
-                            col1, col2, col3 = st.columns(3)
+                            # Hiển thị thống kê tổng quan
+                            st.subheader("📊 Thống kê tổng quan")
+                            col1, col2, col3, col4 = st.columns(4)
                             with col1:
                                 st.metric("Tổng số frame", results["total_frames"])
                             with col2:
                                 st.metric("Số khuôn mặt tối đa", int(results["max_faces"]))
                             with col3:
                                 st.metric("Số khuôn mặt trung bình", f"{results['avg_faces']:.2f}")
+                            with col4:
+                                st.metric("Số người đã nhận diện", results.get("known_faces", 0))
+                            
+                            # Hiển thị thông tin chi tiết về khuôn mặt đã tìm được
+                            if results.get("known_faces", 0) > 0:
+                                st.subheader("👥 Danh sách người đã nhận diện")
+                                
+                                # Tạo tabs cho từng người
+                                if len(results.get("known_face_names", [])) > 0:
+                                    tabs = st.tabs([f"👤 {name}" for name in results["known_face_names"]])
+                                    
+                                    for i, (tab, name) in enumerate(zip(tabs, results["known_face_names"])):
+                                        with tab:
+                                            col_info, col_image = st.columns([2, 1])
+                                            
+                                            with col_info:
+                                                st.write(f"**Tên:** {name}")
+                                                st.write(f"**ID:** {random.randint(100000000000,999999999999)}")
+                                                st.write(f"**Trạng thái:** Đã nhận diện")
+                                                
+                                                # Hiển thị thông tin embedding (tùy chọn)
+                                                if "known_face_embeddings" in results and i < len(results["known_face_embeddings"]):
+                                                    embedding = results["known_face_embeddings"][i]
+                                                    st.write(f"**Kích thước embedding:** {embedding.shape if hasattr(embedding, 'shape') else 'N/A'}")
+                                            
+                                            with col_image:
+                                                # Placeholder cho ảnh khuôn mặt (sẽ cần thêm logic để lưu ảnh khuôn mặt)
+                                                st.info("Ảnh khuôn mặt sẽ được hiển thị ở đây")
+                                                st.image(results["known_face_images"][i], caption=f"Khuôn mặt của {name}", width=150)
+                                
+                                # Hiển thị bảng tóm tắt
+                                st.subheader("📋 Bảng tóm tắt")
+                                face_data = []
+                                for i, name in enumerate(results.get("known_face_names", [])):
+                                    face_data.append({
+                                        "STT": i + 1,
+                                        "Tên": name,
+                                        "Trạng thái": "Đã nhận diện",
+                                        "Lần xuất hiện": "Nhiều lần"  # Có thể tính toán chính xác hơn
+                                    })
+                                
+                                if face_data:
+                                    import pandas as pd
+                                    df = pd.DataFrame(face_data)
+                                    st.dataframe(df, use_container_width=True)
+                            
+                            else:
+                                st.info("Không tìm thấy khuôn mặt nào trong video.")
+                            
+                            # Hiển thị biểu đồ số lượng khuôn mặt theo frame
+                            if results.get("face_count_per_frame"):
+                                st.subheader("📈 Biểu đồ số lượng khuôn mặt theo thời gian")
+                                
+                                import matplotlib.pyplot as plt
+                                import numpy as np
+                                
+                                fig, ax = plt.subplots(figsize=(12, 4))
+                                frames = range(len(results["face_count_per_frame"]))
+                                ax.plot(frames, results["face_count_per_frame"], linewidth=1, alpha=0.7)
+                                ax.fill_between(frames, results["face_count_per_frame"], alpha=0.3)
+                                ax.set_xlabel("Frame")
+                                ax.set_ylabel("Số lượng khuôn mặt")
+                                ax.set_title("Số lượng khuôn mặt phát hiện theo từng frame")
+                                ax.grid(True, alpha=0.3)
+                                
+                                st.pyplot(fig)
                             
                             # Hiển thị video đã xử lý
+                            st.subheader("🎥 Video đã xử lý")
                             if os.path.exists(output_path):
+                                # Nút tải xuống
                                 with open(output_path, "rb") as file:
                                     st.download_button(
-                                        label="Tải xuống video đã xử lý",
+                                        label="📥 Tải xuống video đã xử lý",
                                         data=file,
                                         file_name="face_detection_result.mp4",
-                                        mime="video/mp4"
+                                        mime="video/mp4",
+                                        use_container_width=True
                                     )
                                 
+                                # Hiển thị video
                                 st.video(output_path)
+                            
+                            # Thêm thông tin chi tiết (có thể thu gọn)
+                            with st.expander("🔍 Thông tin chi tiết"):
+                                st.json({
+                                    "Tổng số frame": results["total_frames"],
+                                    "Số khuôn mặt tối đa trong 1 frame": int(results["max_faces"]),
+                                    "Số khuôn mặt trung bình": round(results["avg_faces"], 2),
+                                    "Số người đã nhận diện": results.get("known_faces", 0),
+                                    "Danh sách tên": results.get("known_face_names", [])
+                                })
+                            
+                            # Dọn dẹp file tạm
+                            try:
+                                import shutil
+                                shutil.rmtree(temp_dir)
+                            except:
+                                pass
 
     with col2:
         st.markdown("""
@@ -669,13 +884,13 @@ def surveillance_camera():
         
         # Camera controls
         detection_options = st.multiselect(
-            "Chọn các đối tượng cần phát hiện:",
+            "Chọn các đối tượng cần Detect:",
             ["Khuôn mặt"],
             default=["Khuôn mặt"],
             key="detection_options"
         )
         
-        sensitivity = st.slider("Độ nhạy phát hiện", 0, 100, 50, key="sensitivity")
+        sensitivity = st.slider("Độ nhạy Detect", 0, 100, 50, key="sensitivity")
         
         if st.button("Chụp ảnh", key="capture_btn"):
             st.success("Ảnh đã được chụp thành công!")
@@ -872,8 +1087,8 @@ def scan_qr_code():
                 <ul>
                     <li>Nhấn "START" để bắt đầu camera</li>
                     <li>Đưa QR code vào khung hình</li>
-                    <li>Hệ thống sẽ tự động phát hiện và xử lý QR code</li>
-                    <li>QR code được phát hiện sẽ có khung màu xanh</li>
+                    <li>Hệ thống sẽ tự động Detect và xử lý QR code</li>
+                    <li>QR code được Detect sẽ có khung màu xanh</li>
                 </ul>
                 </div>
                 """, unsafe_allow_html=True)
@@ -889,7 +1104,7 @@ def scan_qr_code():
                         # Check if QR code was detected
                         if hasattr(processor, 'qr_detected') and processor.qr_detected:
                             st.balloons()
-                            st.success("🎉 QR Code đã được phát hiện!")
+                            st.success("🎉 QR Code đã được Detect!")
                             
                             # Process the detected QR code
                             if hasattr(processor, 'qr_data') and processor.qr_data:
@@ -934,13 +1149,13 @@ def scan_qr_code():
         st.markdown("""
         ### MTCNN (Multi-task Cascaded Convolutional Networks)
         
-        MTCNN là một thuật toán phát hiện khuôn mặt hiệu quả cao, hoạt động thông qua 3 giai đoạn cascade:
+        MTCNN là một thuật toán Detect khuôn mặt hiệu quả cao, hoạt động thông qua 3 giai đoạn cascade:
         
         1. **P-Net (Proposal Network)**: Tạo các hộp đề xuất ban đầu
         2. **R-Net (Refinement Network)**: Tinh chỉnh các hộp đề xuất
         3. **O-Net (Output Network)**: Tạo kết quả cuối cùng với các điểm đặc trưng (landmarks)
         
-        MTCNN không chỉ phát hiện khuôn mặt mà còn xác định 5 điểm đặc trưng quan trọng: 2 mắt, mũi và 2 góc miệng.
+        MTCNN không chỉ Detect khuôn mặt mà còn xác định 5 điểm đặc trưng quan trọng: 2 mắt, mũi và 2 góc miệng.
         
         ### FaceNet
         
@@ -951,7 +1166,7 @@ def scan_qr_code():
         - Xác minh khuôn mặt (kiểm tra xem hai khuôn mặt có phải là cùng một người)
         - Phân cụm khuôn mặt
         
-        Trong ứng dụng này, chúng tôi sử dụng MTCNN để phát hiện khuôn mặt và có thể mở rộng với FaceNet để nhận dạng.
+        Trong ứng dụng này, chúng tôi sử dụng MTCNN để Detect khuôn mặt và có thể mở rộng với FaceNet để nhận dạng.
         """,unsafe_allow_html=True)
 def display_latest_citizen_info():
     """Display information of the most recently added citizen"""
@@ -983,7 +1198,7 @@ def process_qr_detection(qr_data):
         citizen_info = qr_data.split('|')
         
         if len(citizen_info) >= 7:
-            st.success("✅ QR code đã được phát hiện và xử lý thành công!")
+            st.success("✅ QR code đã được Detect và xử lý thành công!")
             
             # Save information to DataFrame
             new_data = {
@@ -1036,7 +1251,7 @@ def reset_session_on_error():
         st.session_state.aiortc_error_count = 0
     
     if st.session_state.aiortc_error_count > 3:
-        st.warning("Phát hiện nhiều lỗi aiortc. Đang reset session...")
+        st.warning("Detect nhiều lỗi aiortc. Đang reset session...")
         for key in list(st.session_state.keys()):
             if 'aiortc' in key.lower() or 'peer' in key.lower():
                 del st.session_state[key]
