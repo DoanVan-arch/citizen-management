@@ -182,10 +182,10 @@ class ObjectDetectionTransformer(VideoProcessorBase):
         # Hiển thị thống kê
         if boxes is not None:
             face_count = len(boxes)
-            cv2.putText(img, f"Phát hiện: {face_count} | Đã biết: {len(self.known_face_embeddings)}", 
+            cv2.putText(img, f"detected: {face_count} | Knowed: {len(self.known_face_embeddings)}", 
                        (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         else:
-            cv2.putText(img, f"Phát hiện: 0 | Đã biết: {len(self.known_face_embeddings)}", 
+            cv2.putText(img, f"detect: 0 | Knowed: {len(self.known_face_embeddings)}", 
                        (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         
         return av.VideoFrame.from_ndarray(img, format="bgr24")
