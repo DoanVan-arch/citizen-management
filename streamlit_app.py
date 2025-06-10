@@ -602,17 +602,17 @@ def surveillance_camera():
                             
                             # Hiển thị thông tin
                             if boxes is not None:
-                                st.success(f"Đã phát hiện {len(boxes)} khuôn mặt trong ảnh")
+                                st.success(f"Detected {len(boxes)} face")
                                 
                                 # Hiển thị thông tin chi tiết cho mỗi khuôn mặt
                                 for i, (box, prob) in enumerate(zip(boxes, probs)):
-                                    with st.expander(f"Khuôn mặt #{i+1} (Độ tin cậy: {prob:.2f})"):
+                                    with st.expander(f"Face #{i+1} (Relibity: {prob:.2f})"):
                                         # Cắt khuôn mặt từ ảnh gốc
                                         x1, y1, x2, y2 = [int(p) for p in box]
                                         face_img = Image.fromarray(img_array[y1:y2, x1:x2])
                                         
                                         # Hiển thị khuôn mặt đã cắt
-                                        st.image(face_img, caption=f"Khuôn mặt #{i+1}", width=150)
+                                        st.image(face_img, caption=f"face #{i+1}", width=150)
                                         
                                         # Hiển thị thông tin vị trí
                                         st.text(f"Vị trí: X1={x1}, Y1={y1}, X2={x2}, Y2={y2}")
