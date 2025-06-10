@@ -535,8 +535,8 @@ def surveillance_camera():
             try:
                 if AIORTC_AVAILABLE:
                     response = requests.get(
-                        "https://iewcom.metered.live/api/v1/turn/credentials",
-                        params={"apiKey": "5b0cc93867e02c9b2e8ef46de385169008aa"}
+                        "https://iewcom1.metered.live/api/v1/turn/credentials",
+                        params={"apiKey": "097b76f5eee1b5486c8b495410bd84adf5f2"}
                     )
                     ice_servers = response.json()
 
@@ -841,8 +841,8 @@ def scan_qr_code():
             if AIORTC_AVAILABLE:
                 # Get ICE servers
                 response = requests.get(
-                    "https://iewcom.metered.live/api/v1/turn/credentials",
-                    params={"apiKey": "5b0cc93867e02c9b2e8ef46de385169008aa"}
+                    "https://iewcom1.metered.live/api/v1/turn/credentials",
+                    params={"apiKey": "097b76f5eee1b5486c8b495410bd84adf5f2"}
                 )
                 ice_servers = response.json()
                 
