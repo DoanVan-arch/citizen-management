@@ -17,7 +17,8 @@ from facenet_pytorch import MTCNN, InceptionResnetV1
 import torch
 import torch.nn.functional as F
 import time
-
+import matplotlib.pyplot as plt
+import numpy as np
 # Thêm try-except cho import asyncio để xử lý lỗi liên quan đến asyncio
 try:
     import asyncio
@@ -827,19 +828,9 @@ def surveillance_camera():
                             if results.get("face_count_per_frame"):
                                 st.subheader("📈 Biểu đồ số lượng khuôn mặt theo thời gian")
                                 
-                                import matplotlib.pyplot as plt
-                                import numpy as np
                                 
-                                fig, ax = plt.subplots(figsize=(12, 4))
-                                frames = range(len(results["face_count_per_frame"]))
-                                ax.plot(frames, results["face_count_per_frame"], linewidth=1, alpha=0.7)
-                                ax.fill_between(frames, results["face_count_per_frame"], alpha=0.3)
-                                ax.set_xlabel("Frame")
-                                ax.set_ylabel("Số lượng khuôn mặt")
-                                ax.set_title("Số lượng khuôn mặt phát hiện theo từng frame")
-                                ax.grid(True, alpha=0.3)
                                 
-                                st.pyplot(fig)
+                               
                             
                             # Hiển thị video đã xử lý
                             st.subheader("🎥 Video đã xử lý")
