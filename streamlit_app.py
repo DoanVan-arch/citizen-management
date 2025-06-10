@@ -111,7 +111,7 @@ class ObjectDetectionTransformer(VideoProcessorBase):
     def add_new_face(self, embedding, name=None):
         """Thêm khuôn mặt mới vào danh sách"""
         if name is None:
-            name = f"Đối tượng {self.face_counter}"
+            name = f"suspect {self.face_counter}"
             self.face_counter += 1
         
         self.known_face_embeddings.append(embedding)
@@ -164,7 +164,7 @@ class ObjectDetectionTransformer(VideoProcessorBase):
                             else:
                                 # Khuôn mặt mới - thêm vào danh sách
                                 self.add_new_face(embedding)
-                                label = f"Người {self.face_counter - 1} (Mới)"
+                                label = f"suspect {self.face_counter - 1} (New)"
                                 color = (0, 0, 255)  # Đỏ cho khuôn mặt mới
                             
                             # Hiển thị tên/nhãn
@@ -175,7 +175,7 @@ class ObjectDetectionTransformer(VideoProcessorBase):
                     print(f"Lỗi xử lý khuôn mặt: {e}")
                 
                 # Hiển thị xác suất phát hiện
-                confidence = f"Độ tin cậy: {probs[i]:.2f}"
+                confidence = f"Reliability: {probs[i]:.2f}"
                 cv2.putText(img, confidence, (x1, y1-10), 
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
         
