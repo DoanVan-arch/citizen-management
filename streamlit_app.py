@@ -1684,7 +1684,7 @@ def main():
                         border-radius: 5px; margin-bottom: 20px;'>
                          <b>{st.session_state.username}</b></div>""", 
                         unsafe_allow_html=True)
-      add_custom_css()
+    
     
     # Khởi tạo session state
     initialize_session_state()
