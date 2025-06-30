@@ -904,6 +904,63 @@ def surveillance_camera():
             3. Thử sử dụng trình duyệt khác
             4. Sử dụng tùy chọn 'Upload video/ảnh'
             """)
+JSON_FILE_PATH ="data.json"
+def load_data_from_json():
+    """
+    Đọc dữ liệu từ file JSON
+    """
+    try:
+        if os.path.exists(JSON_FILE_PATH):
+            with open(JSON_FILE_PATH, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Chuyển đổi từ JSON sang DataFrame
+            if data:  # Nếu có dữ liệu
+                df = pd.DataFrame(data)
+                return df
+            else:
+                # Tạo DataFrame rỗng với các cột cần thiết
+                return pd.DataFrame(columns=[
+                    'id', 'cccd', 'name', 'dob', 'sex', 
+                    'address', 'expdate', 'scan_date', 'image_path'
+                ])
+        else:
+            # Tạo DataFrame rỗng nếu file không tồn tại
+            return pd.DataFrame(columns=[
+                'id', 'cccd', 'name', 'dob', 'sex', 
+                'address', 'expdate', 'scan_date', 'image_path'
+            ])
+    
+    except Exception as e:
+        st.error(f"Lỗi khi đọc file JSON: {str(e)}")
+        return pd.DataFrame(columns=[
+            'id', 'cccd', 'name', 'dob', 'sex', 
+            'address', 'expdate', 'scan_date', 'image_path'
+        ])
+
+def save_data_to_json(dataframe):
+    """
+    Lưu DataFrame vào file JSON
+    """
+    try:
+        # Chuyển đổi DataFrame sang dictionary
+        data_dict = dataframe.to_dict('records')
+        
+        # Lưu vào file JSON
+        with open(JSON_FILE_PATH, 'w', encoding='utf-8') as f:
+            json.dump(data_dict, f, ensure_ascii=False, indent=2)
+        
+        return True, "Dữ liệu đã được lưu thành công!"
+    
+    except Exception as e:
+        return False, f"Lỗi khi lưu file JSON: {str(e)}"
+
+def initialize_session_state():
+    """
+    Khởi tạo session state với dữ liệu từ JSON
+    """
+    if 'citizens_data' not in st.session_state:
+        st.session_state.citizens_data = load_data_from_json()
 
 def process_image_for_qr(image):
     """
@@ -957,13 +1014,66 @@ def process_image_for_qr(image):
                     pd.DataFrame([new_data])
                 ], ignore_index=True)
                 
+                # Lưu dữ liệu vào JSON ngay sau khi thêm
+                success, message = save_data_to_json(st.session_state.citizens_data)
+                if not success:
+                    st.warning(f"Cảnh báo: {message}")
+                
                 return True, "QR code processed successfully!"
                 
-        return False, "Lỗi không xác định."
+        return False, "Không tìm thấy QR code hợp lệ."
     
     except Exception as e:
         return False, f"Lỗi: {str(e)}"
 
+def delete_citizen_record(index):
+    """
+    Xóa một bản ghi công dân
+    """
+    try:
+        # Xóa ảnh nếu tồn tại
+        if index < len(st.session_state.citizens_data):
+            image_path = st.session_state.citizens_data.iloc[index]['image_path']
+            if os.path.exists(image_path):
+                os.remove(image_path)
+        
+        # Xóa bản ghi khỏi DataFrame
+        st.session_state.citizens_data = st.session_state.citizens_data.drop(index).reset_index(drop=True)
+        
+        # Lưu lại vào JSON
+        success, message = save_data_to_json(st.session_state.citizens_data)
+        return success, message if success else f"Đã xóa bản ghi nhưng có lỗi khi lưu: {message}"
+        
+    except Exception as e:
+        return False, f"Lỗi khi xóa bản ghi: {str(e)}"
+
+
+
+
+
+def clear_all_data():
+    """
+    Xóa tất cả dữ liệu
+    """
+    try:
+        # Xóa tất cả ảnh
+        if len(st.session_state.citizens_data) > 0:
+            for _, row in st.session_state.citizens_data.iterrows():
+                if os.path.exists(row['image_path']):
+                    os.remove(row['image_path'])
+        
+        # Tạo DataFrame rỗng
+        st.session_state.citizens_data = pd.DataFrame(columns=[
+            'id', 'cccd', 'name', 'dob', 'sex', 
+            'address', 'expdate', 'scan_date', 'image_path'
+        ])
+        
+        # Lưu DataFrame rỗng vào JSON
+        success, message = save_data_to_json(st.session_state.citizens_data)
+        return success, "Đã xóa tất cả dữ liệu!"
+        
+    except Exception as e:
+        return False, f"Lỗi khi xóa dữ liệu: {str(e)}"
 # Add this new class for QR code detection
 class QRCodeProcessor(VideoProcessorBase):
     def __init__(self):
@@ -1262,13 +1372,57 @@ def show_citizen_data():
     st.markdown("<h2 style='text-align: center;'>Dữ liệu Công dân</h2>", unsafe_allow_html=True)
     
     if not st.session_state.citizens_data.empty:
+        # Header với thống kê và nút xóa hết
+        col_header1, col_header2, col_header3 = st.columns([2, 1, 1])
+        
+        with col_header1:
+            st.info(f"📊 Tổng số công dân: **{len(st.session_state.citizens_data)}**")
+        
+        with col_header2:
+            # Nút backup trước khi xóa
+            if st.button("💾 Backup dữ liệu", type="secondary"):
+                success, message = export_data_to_json()
+                if success:
+                    st.success(message)
+                else:
+                    st.error(message)
+        
+        with col_header3:
+            # Nút xóa tất cả với confirmation
+            if st.button("🗑️ Xóa tất cả", type="secondary"):
+                st.session_state.show_delete_all_confirm = True
+        
+        # Confirmation dialog cho xóa tất cả
+        if getattr(st.session_state, 'show_delete_all_confirm', False):
+            st.warning("⚠️ **Cảnh báo:** Bạn có chắc chắn muốn xóa tất cả dữ liệu?")
+            col_confirm1, col_confirm2, col_confirm3 = st.columns([1, 1, 2])
+            
+            with col_confirm1:
+                if st.button("✅ Xác nhận xóa", type="primary"):
+                    success, message = clear_all_data()
+                    if success:
+                        st.success(message)
+                        st.session_state.show_delete_all_confirm = False
+                        st.rerun()
+                    else:
+                        st.error(message)
+            
+            with col_confirm2:
+                if st.button("❌ Hủy bỏ"):
+                    st.session_state.show_delete_all_confirm = False
+                    st.rerun()
+        
+        st.divider()
+        
+        # Hiển thị từng bản ghi với nút xóa
         for index, row in st.session_state.citizens_data.iterrows():
-            with st.expander(f"Công dân:{row['name']} - CCCD: {row['cccd']}"):
-                col1, col2 = st.columns([1, 2])
+            with st.expander(f"Công dân: {row['name']} - CCCD: {row['cccd']}"):
+                # Layout chính
+                col1, col2, col3 = st.columns([1, 2, 0.5])
                 
                 with col1:
                     if os.path.exists(row['image_path']):
-                        st.image(row['image_path'], caption="ảnh CCCD", use_container_width=True)
+                        st.image(row['image_path'], caption="Ảnh CCCD", use_container_width=True)
                     else:
                         st.warning("Ảnh CCCD không tồn tại!")
                 
@@ -1283,9 +1437,131 @@ def show_citizen_data():
                     **Ngày hết hạn:** {row['expdate']}  
                     **Ngày quét:** {row['scan_date']}
                     """)
+                
+                with col3:
+                    st.markdown("**Thao tác:**")
+                    
+                    # Nút xóa từng bản ghi
+                    if st.button(f"🗑️ Xóa", key=f"delete_single_{index}", type="secondary"):
+                        st.session_state[f'show_delete_confirm_{index}'] = True
+                    
+                    # Confirmation cho xóa từng bản ghi
+                    if getattr(st.session_state, f'show_delete_confirm_{index}', False):
+                        st.warning("⚠️ Xác nhận xóa?")
+                        
+                        col_del1, col_del2 = st.columns(2)
+                        with col_del1:
+                            if st.button("✅", key=f"confirm_delete_{index}", type="primary"):
+                                success, message = delete_citizen_record(index)
+                                if success:
+                                    st.success(message)
+                                    # Reset confirmation state
+                                    st.session_state[f'show_delete_confirm_{index}'] = False
+                                    st.rerun()
+                                else:
+                                    st.error(message)
+                        
+                        with col_del2:
+                            if st.button("❌", key=f"cancel_delete_{index}"):
+                                st.session_state[f'show_delete_confirm_{index}'] = False
+                                st.rerun()
+                
+                # Thêm thông tin bổ sung (tùy chọn)
+                with st.container():
+                    st.markdown("---")
+                    col_extra1, col_extra2, col_extra3 = st.columns(3)
+                    
+                    with col_extra1:
+                        st.caption(f"🕒 Thời gian quét: {row['scan_date']}")
+                    
+                    with col_extra2:
+                        # Tính tuổi từ ngày sinh
+                        try:
+                            dob = datetime.strptime(row['dob'], "%d/%m/%Y")
+                            age = datetime.now().year - dob.year
+                            st.caption(f"🎂 Tuổi: {age}")
+                        except:
+                            st.caption("🎂 Tuổi: N/A")
+                    
+                    with col_extra3:
+                        # Kiểm tra hạn CCCD
+                        try:
+                            exp_date = datetime.strptime(row['expdate'], "%d/%m/%Y")
+                            days_left = (exp_date - datetime.now()).days
+                            if days_left < 0:
+                                st.caption("⚠️ **Đã hết hạn**")
+                            elif days_left < 30:
+                                st.caption(f"⚠️ Còn {days_left} ngày")
+                            else:
+                                st.caption(f"✅ Còn {days_left} ngày")
+                        except:
+                            st.caption("📅 Hạn: N/A")
+                
     else:
-        st.info("Chưa có dữ liệu công dân nào.")
+        # Thông báo khi không có dữ liệu
+        st.markdown("""
+        <div style='text-align: center; padding: 50px;'>
+            <h3>📋 Chưa có dữ liệu công dân nào</h3>
+            <p>Hãy quét QR code để thêm thông tin công dân mới</p>
+        </div>
+        """, unsafe_allow_html=True)
 
+def export_data_to_json(filename=None):
+    """
+    Xuất dữ liệu ra file JSON khác (backup)
+    """
+    try:
+        if filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"citizens_backup_{timestamp}.json"
+        
+        data_dict = st.session_state.citizens_data.to_dict('records')
+        
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(data_dict, f, ensure_ascii=False, indent=2)
+        
+        return True, f"Dữ liệu đã được backup vào file: {filename}"
+    
+    except Exception as e:
+        return False, f"Lỗi khi backup dữ liệu: {str(e)}"
+
+# Thêm CSS để làm đẹp giao diện
+def add_custom_css():
+    st.markdown("""
+    <style>
+    /* Style cho nút xóa */
+    .stButton > button[kind="secondary"] {
+        background-color: #ff4b4b;
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
+    
+    .stButton > button[kind="secondary"]:hover {
+        background-color: #ff6b6b;
+        color: white;
+    }
+    
+    /* Style cho confirmation buttons */
+    .stButton > button[kind="primary"] {
+        background-color: #00cc88;
+        color: white;
+        border: none;
+        border-radius: 5px;
+    }
+    
+    /* Style cho expander */
+    .streamlit-expanderHeader {
+        background-color: #f0f2f6;
+        border-radius: 5px;
+    }
+    
+    /* Style cho warning messages */
+    .stAlert > div {
+        border-radius: 5px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 def show_homepage():
     st.markdown("<h1 style='text-align: center;'>Hệ thống Quản lý Công dân</h1>", unsafe_allow_html=True)
@@ -1408,7 +1684,10 @@ def main():
                         border-radius: 5px; margin-bottom: 20px;'>
                          <b>{st.session_state.username}</b></div>""", 
                         unsafe_allow_html=True)
+      add_custom_css()
     
+    # Khởi tạo session state
+    initialize_session_state()
     menu = [
         "Trang chủ",
         "Quét QR CCCD",
