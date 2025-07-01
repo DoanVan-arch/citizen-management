@@ -1,0 +1,35 @@
+[
+  {
+    "id": "008099007680",
+    "cccd": "071058932",
+    "name": "Trần Khánh",
+    "dob": "06071999",
+    "sex": "Nam",
+    "address": "Số Nhà 18, Ngõ 199 Đường Bình Thuận, Tổ 10, Hưng Thành, TP. Tuyên Quang, Tuyên Quang",
+    "expdate": "08072024",
+    "scan_date": "2025-07-01 16:08:50",
+    "image_path": "uploaded_images\\citizen_image_20250701_160850.jpg"
+  },
+  {
+    "id": "036099004555",
+    "cccd": "",
+    "name": "Cao Đăng Long",
+    "dob": "22091999",
+    "sex": "Nam",
+    "address": "2/30 Tô Hiến Thành, Trường Thi, TP. Nam Định, Nam Định",
+    "expdate": "01082024",
+    "scan_date": "2025-07-01 16:09:14",
+    "image_path": "uploaded_images\\citizen_image_20250701_160914.jpg"
+  },
+  {
+    "id": "001099025296",
+    "cccd": "017524635",
+    "name": "Mai Thanh Đề",
+    "dob": "04071999",
+    "sex": "Nam",
+    "address": "Thôn Viên Ngoại, Viên An, Ứng Hòa, Hà Nội",
+    "expdate": "31072024",
+    "scan_date": "2025-07-01 16:32:56",
+    "image_path": "uploaded_images\\citizen_image_20250701_163256.jpg"
+  }
+]

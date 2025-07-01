@@ -70,7 +70,7 @@ class ObjectDetectionTransformer(VideoProcessorBase):
         # Biến để lưu trữ embedding khuôn mặt
         self.known_face_embeddings = []
         self.known_face_names = []
-        
+        self.known_face_id = []
         # Ngưỡng để xác định khuôn mặt giống nhau
         self.similarity_threshold = 0.6
         
@@ -422,6 +422,7 @@ def process_video(video_path, mtcnn, output_path=None):
     known_face_embeddings = []
     known_face_names = []
     known_face_images = []
+    known_face_id = []
     face_counter = 1
     similarity_threshold = 0.6
     
@@ -477,14 +478,16 @@ def process_video(video_path, mtcnn, output_path=None):
         nonlocal face_counter
         if name is None:
             _random_citizen= get_random_citizen_info()
-            if(_random_citizen==None):
+            if(_random_citizen is None):
                 ho = random.choice(ho_list)
                 ten_dem = random.choice(ten_dem_list)
                 ten = random.choice(ten_list)
                 name = f"{ho} {ten_dem} {ten}"
+                id = ""
             else:
                 
                 name = _random_citizen['name']
+                id = _random_citizen['id']
     
     # Đảm bảo không trùng tên
             # while name in known_face_names:
@@ -495,6 +498,7 @@ def process_video(video_path, mtcnn, output_path=None):
         if(name not in known_face_names):
             known_face_embeddings.append(embedding)
             known_face_names.append(name)
+            known_face_id.append(id)
             known_face_images.append(face_img)
             print(f"Đã thêm khuôn mặt mới: {name}")
         return name
@@ -613,7 +617,8 @@ def process_video(video_path, mtcnn, output_path=None):
         "known_faces": len(known_face_embeddings),
         "known_face_names": known_face_names.copy(),
         "known_face_embeddings": known_face_embeddings.copy(),
-        "known_face_images":known_face_images.copy()
+        "known_face_images":known_face_images.copy(),
+        "known_face_id":known_face_id.copy()
     }
 def login_page():
     st.markdown("<h1 style='text-align: center;'>Đăng nhập Hệ thống</h1>", unsafe_allow_html=True)
@@ -791,13 +796,13 @@ def surveillance_camera():
                                 if len(results.get("known_face_names", [])) > 0:
                                     tabs = st.tabs([f"👤 {name}" for name in results["known_face_names"]])
                                     
-                                    for i, (tab, name) in enumerate(zip(tabs, results["known_face_names"])):
+                                    for i, (tab, name,id) in enumerate(zip(tabs, results["known_face_names"],results["known_face_id"])):
                                         with tab:
                                             col_info, col_image = st.columns([2, 1])
                                             
                                             with col_info:
                                                 st.write(f"**Tên:** {name}")
-                                                st.write(f"**ID:** {random.randint(100000000000,999999999999)}")
+                                                st.write(f"**ID:** {id}")
                                                 st.write(f"**Trạng thái:** Đã nhận diện")
                                                 
                                                 # Hiển thị thông tin embedding (tùy chọn)
