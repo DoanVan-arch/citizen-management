@@ -982,7 +982,7 @@ def process_image_for_qr(image):
         decoded_objects = decode(frame_rgb)
         
         for obj in decoded_objects:
-            qr_data = obj.data.decode('utf-8')
+            qr_data = obj.data.decode('iso-8859-1')
             citizen_info = qr_data.split('|')
             
             if len(citizen_info) >= 7:
