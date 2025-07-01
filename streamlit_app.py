@@ -476,22 +476,27 @@ def process_video(video_path, mtcnn, output_path=None):
         """Thêm khuôn mặt mới vào danh sách"""
         nonlocal face_counter
         if name is None:
-            ho = random.choice(ho_list)
-            ten_dem = random.choice(ten_dem_list)
-            ten = random.choice(ten_list)
-            name = f"{ho} {ten_dem} {ten}"
-    
-    # Đảm bảo không trùng tên
-            while name in known_face_names:
+            _random_citizen= get_random_citizen_info()
+            if(_random_citizen==None):
                 ho = random.choice(ho_list)
                 ten_dem = random.choice(ten_dem_list)
                 ten = random.choice(ten_list)
                 name = f"{ho} {ten_dem} {ten}"
-        
-        known_face_embeddings.append(embedding)
-        known_face_names.append(name)
-        known_face_images.append(face_img)
-        print(f"Đã thêm khuôn mặt mới: {name}")
+            else:
+                
+                name = _random_citizen['name']
+    
+    # Đảm bảo không trùng tên
+            # while name in known_face_names:
+            #     ho = random.choice(ho_list)
+            #     ten_dem = random.choice(ten_dem_list)
+            #     ten = random.choice(ten_list)
+            #     name = f"{ho} {ten_dem} {ten}"
+        if(name not in known_face_names):
+            known_face_embeddings.append(embedding)
+            known_face_names.append(name)
+            known_face_images.append(face_img)
+            print(f"Đã thêm khuôn mặt mới: {name}")
         return name
     
     while cap.isOpened():
@@ -959,8 +964,8 @@ def initialize_session_state():
     """
     Khởi tạo session state với dữ liệu từ JSON
     """
-    if 'citizens_data' not in st.session_state:
-        st.session_state.citizens_data = load_data_from_json()
+    
+    st.session_state.citizens_data = load_data_from_json()
 
 def process_image_for_qr(image):
     """
@@ -1049,7 +1054,27 @@ def delete_citizen_record(index):
 
 
 
-
+def get_random_citizen_info():
+    """Lấy thông tin công dân ngẫu nhiên"""
+    try:
+        # Kiểm tra session state có dữ liệu không
+        if 'citizens_data' not in st.session_state:
+            print("Không có dữ liệu công dân trong session state")
+            return None
+        
+        if st.session_state.citizens_data is None or st.session_state.citizens_data.empty:
+            print("Dữ liệu công dân rỗng")
+            return None
+        
+        # Lấy ngẫu nhiên một citizen
+        random_citizen = st.session_state.citizens_data.sample(n=1).iloc[0]
+        
+        print(f"Đã chọn ngẫu nhiên công dân: {random_citizen.get('name', 'Unknown')}")
+        return random_citizen
+        
+    except Exception as e:
+        print(f"Lỗi khi lấy citizen ngẫu nhiên: {e}")
+        return None
 
 def clear_all_data():
     """
