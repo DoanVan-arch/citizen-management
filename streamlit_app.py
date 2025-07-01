@@ -1067,7 +1067,7 @@ def process_image_for_qr(image):
                 new_data = {
                     'id': citizen_info[0],
                     'cccd': citizen_info[1],
-                    'name': fix_vietnamese_text(qr_data),
+                    'name': fix_vietnamese_text(citizen_info[2]),
                     'dob': citizen_info[3],
                     'sex': citizen_info[4],
                     'address': citizen_info[5],
