@@ -1057,14 +1057,14 @@ def delete_citizen_record(index):
 def get_random_citizen_info():
     """Lấy thông tin công dân ngẫu nhiên"""
     try:
-        # Kiểm tra session state có dữ liệu không
-        if 'citizens_data' not in st.session_state:
-            print("Không có dữ liệu công dân trong session state")
-            return None
+        # # Kiểm tra session state có dữ liệu không
+        # if 'citizens_data' not in st.session_state:
+        #     print("Không có dữ liệu công dân trong session state")
+        #     return None
         
-        if st.session_state.citizens_data is None or st.session_state.citizens_data.empty:
-            print("Dữ liệu công dân rỗng")
-            return None
+        # if st.session_state.citizens_data is None or st.session_state.citizens_data.empty:
+        #     print("Dữ liệu công dân rỗng")
+        #     return None
         
         # Lấy ngẫu nhiên một citizen
         random_citizen = st.session_state.citizens_data.sample(n=1).iloc[0]
