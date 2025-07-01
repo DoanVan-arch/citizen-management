@@ -982,7 +982,7 @@ def process_image_for_qr(image):
         decoded_objects = decode(frame_rgb)
         
         for obj in decoded_objects:
-            qr_data = obj.data.decode('iso-8859-1')
+            qr_data = obj.data.decode('utf-8')
             citizen_info = qr_data.split('|')
             
             if len(citizen_info) >= 7:
@@ -1686,6 +1686,46 @@ def setup_cloud_environment():
     else:
         st.sidebar.info("💻 Running locally")
         return False
+
+
+def configure_streamlit_vietnamese():
+    """Cấu hình Streamlit hỗ trợ tiếng Việt"""
+    
+    # CSS cho font tiếng Việt
+    vietnamese_css = """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', 'Segoe UI', 'Arial Unicode MS', sans-serif !important;
+    }
+    
+    .stTextInput > div > div > input {
+        font-family: 'Inter', 'Segoe UI', 'Arial Unicode MS', sans-serif !important;
+    }
+    
+    .stSelectbox > div > div > div {
+        font-family: 'Inter', 'Segoe UI', 'Arial Unicode MS', sans-serif !important;
+    }
+    
+    .stMarkdown {
+        font-family: 'Inter', 'Segoe UI', 'Arial Unicode MS', sans-serif !important;
+    }
+    
+    /* Fix cho text hiển thị */
+    .vietnamese-text {
+        font-family: 'Inter', 'Segoe UI', 'Arial Unicode MS', sans-serif !important;
+        font-feature-settings: "liga" off;
+        text-rendering: optimizeLegibility;
+    }
+    </style>
+    """
+    
+    st.markdown(vietnamese_css, unsafe_allow_html=True)
+
+# Sử dụng trong app
+
+
 def main():
     # Kiểm tra đăng nhập
     if not st.session_state.logged_in:
@@ -1713,6 +1753,7 @@ def main():
     
     # Khởi tạo session state
     initialize_session_state()
+    configure_streamlit_vietnamese()
     menu = [
         "Trang chủ",
         "Quét QR CCCD",
