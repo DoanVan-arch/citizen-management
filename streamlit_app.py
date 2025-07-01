@@ -1001,13 +1001,14 @@ def fix_character_mapping(text):
     # Mapping các ký tự bị lỗi phổ biến
     char_fixes = {
         '麼': 'ườ',  # Trường
-        '吵': 'ng',  # ng
+        '吵': 'n',  # ng
         '獺': 'á',   # á  
         '麗': 'ệ',   # ệ
         '鬼': 'ử',   # ử
         '鬱': 'ự',   # ự
-        '麵': 'ầ',   # ầ
-        '麥': 'ấ',   # ấ
+           # ầ
+        '麥': 'ấ',
+        '廕':  'ầ' # ấ
         # Thêm mapping khác...
     }
     
