@@ -966,7 +966,69 @@ def initialize_session_state():
     """
     
     st.session_state.citizens_data = load_data_from_json()
+import unicodedata
 
+def fix_vietnamese_text(text):
+    """Sửa lỗi encoding tiếng Việt"""
+    try:
+        # Phương pháp 1: Normalize Unicode
+        normalized = unicodedata.normalize('NFC', text)
+        
+        # Phương pháp 2: Decode/Encode lại
+        if isinstance(text, bytes):
+            # Thử các encoding khác nhau
+            encodings = ['utf-8', 'latin1', 'cp1252', 'iso-8859-1']
+            for encoding in encodings:
+                try:
+                    decoded = text.decode(encoding)
+                    if is_valid_vietnamese(decoded):
+                        return decoded
+                except:
+                    continue
+        
+        # Phương pháp 3: Fix character mapping
+        fixed_text = fix_character_mapping(text)
+        
+        return fixed_text
+        
+    except Exception as e:
+        print(f"Lỗi fix text: {e}")
+        return text
+
+def fix_character_mapping(text):
+    """Sửa mapping ký tự bị lỗi"""
+    
+    # Mapping các ký tự bị lỗi phổ biến
+    char_fixes = {
+        '麼': 'ườ',  # Trường
+        '吵': 'ng',  # ng
+        '獺': 'á',   # á  
+        '麗': 'ệ',   # ệ
+        '鬼': 'ử',   # ử
+        '鬱': 'ự',   # ự
+        '麵': 'ầ',   # ầ
+        '麥': 'ấ',   # ấ
+        # Thêm mapping khác...
+    }
+    
+    fixed_text = text
+    for wrong_char, correct_char in char_fixes.items():
+        fixed_text = fixed_text.replace(wrong_char, correct_char)
+    
+    return fixed_text
+
+def is_valid_vietnamese(text):
+    """Kiểm tra text tiếng Việt hợp lệ"""
+    vietnamese_chars = set('aàáạảãâầấậẩẫăằắặẳẵeèéẹẻẽêềếệểễiìíịỉĩoòóọỏõôồốộổỗơờớợởỡuùúụủũưừứựửữyỳýỵỷỹđAÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴEÈÉẸẺẼÊỀẾỆỂỄIÌÍỊỈĨOÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠUÙÚỤỦŨƯỪỨỰỬỮYỲÝỴỶỸĐ ')
+    
+    # Kiểm tra tỷ lệ ký tự tiếng Việt
+    vietnamese_count = sum(1 for char in text if char in vietnamese_chars)
+    total_chars = len([c for c in text if c.isalpha()])
+    
+    if total_chars == 0:
+        return False
+    
+    return vietnamese_count / total_chars > 0.5
 def process_image_for_qr(image):
     """
     Xử lý ảnh để tìm và giải mã QR code
@@ -1004,7 +1066,7 @@ def process_image_for_qr(image):
                 new_data = {
                     'id': citizen_info[0],
                     'cccd': citizen_info[1],
-                    'name': citizen_info[2],
+                    'name': fix_vietnamese_text(citizen_info[2]),
                     'dob': citizen_info[3],
                     'sex': citizen_info[4],
                     'address': citizen_info[5],
